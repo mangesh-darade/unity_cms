@@ -1,0 +1,124 @@
+/* CMS Tab System & Admin Control Panels */
+
+.cms-container {
+    display: flex;
+    gap: 30px;
+    margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+    .cms-container {
+        flex-direction: column;
+    }
+}
+
+.cms-tabs-list {
+    width: 220px;
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+    .cms-tabs-list {
+        width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+    }
+}
+
+.cms-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    font-weight: 600;
+    color: #64748b;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.15s ease;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+}
+
+.cms-tab-btn:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+.cms-tab-btn.active {
+    background-color: #0d9488;
+    color: #ffffff;
+}
+
+.cms-tab-content {
+    flex-grow: 1;
+    display: none;
+}
+
+.cms-tab-content.active {
+    display: block;
+}
+
+/* CMS list tables and editors */
+.cms-item-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+@media (max-width: 600px) {
+    .cms-item-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+.cms-item-details {
+    flex-grow: 1;
+}
+
+.cms-item-details h4 {
+    font-size: 1.1rem;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+
+.cms-item-actions {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* Inline Add Forms */
+.cms-form-box {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+/* Image preview badge */
+.img-preview-badge {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+    background-color: #cbd5e1;
+}
