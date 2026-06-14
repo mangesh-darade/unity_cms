@@ -73,45 +73,6 @@ document.addEventListener('DOMContentLoaded', () => {
         onScroll();
     }
 
-    // Dark / light theme toggle
-    const themeToggle = document.querySelector('.theme-toggle');
-    const root = document.documentElement;
-
-    function applyTheme(theme) {
-        if (theme === 'dark') {
-            root.setAttribute('data-theme', 'dark');
-        } else {
-            root.removeAttribute('data-theme');
-        }
-    }
-
-    function getStoredTheme() {
-        try {
-            return localStorage.getItem('unity-theme');
-        } catch (e) {
-            return null;
-        }
-    }
-
-    function setStoredTheme(theme) {
-        try {
-            if (theme) {
-                localStorage.setItem('unity-theme', theme);
-            } else {
-                localStorage.removeItem('unity-theme');
-            }
-        } catch (e) { /* ignore */ }
-    }
-
-    if (themeToggle) {
-        themeToggle.addEventListener('click', () => {
-            const isDark = root.getAttribute('data-theme') === 'dark';
-            const next = isDark ? 'light' : 'dark';
-            applyTheme(next);
-            setStoredTheme(next);
-        });
-    }
-
     // Scroll reveal animations (threshold 0 so tall grids like services catalog still reveal)
     const revealEls = document.querySelectorAll('.reveal, .reveal-stagger');
     if (revealEls.length && 'IntersectionObserver' in window) {

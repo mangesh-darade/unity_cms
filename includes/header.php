@@ -95,9 +95,6 @@ if (basename($_SERVER['PHP_SELF']) !== 'index.php' && stripos($_body_class, 'pag
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?php echo htmlspecialchars(csrfToken()); ?>">
     <?php renderMarketingHead($cms, $page_meta); ?>
-    <script>
-    (function(){try{var t=localStorage.getItem('unity-theme');if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();
-    </script>
 
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/premium.css">
@@ -186,10 +183,6 @@ if (basename($_SERVER['PHP_SELF']) !== 'index.php' && stripos($_body_class, 'pag
                     <?php if ($nav_cta): ?>
                     <a href="<?php echo htmlspecialchars($nav_cta['url']); ?>" class="btn btn-primary nav-header-cta"><?php echo htmlspecialchars($nav_cta['title']); ?></a>
                     <?php endif; ?>
-                    <button type="button" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
-                        <i class="fa-solid fa-moon theme-icon-dark"></i>
-                        <i class="fa-solid fa-sun theme-icon-light"></i>
-                    </button>
                     <button class="menu-toggle" aria-label="<?php echo htmlspecialchars($menu_toggle_label); ?>" aria-expanded="false">☰</button>
                 </div>
             </nav>
