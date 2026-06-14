@@ -5,23 +5,27 @@ $home_gallery = $db->query("SELECT * FROM cms_gallery ORDER BY sequence ASC LIMI
 <!-- Gallery Section -->
 <section class="gallery-section section-padding">
     <div class="container">
-        <div class="section-header">
-            <span class="section-tag">Inside Unity Lab</span>
-            <h2 class="section-title">Our Laboratory Gallery</h2>
-            <p class="section-desc max-w-md">Take a look inside our clean, professional, and accredited diagnostic environment.</p>
-        </div>
+        <?php renderSectionHeader($cms_sections, 'gallery', [
+            'tag' => 'Inside Our Lab',
+            'title' => 'Our Laboratory Gallery',
+            'desc' => 'Take a look at our clean diagnostic environment and sample processing areas.',
+        ]); ?>
         
-        <div class="gallery-grid">
+        <div class="gallery-grid gallery-grid-home">
             <?php foreach ($home_gallery as $item): ?>
-                <div class="gallery-item">
-                    <img src="<?php echo htmlspecialchars($item['image_path']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>">
+                <a href="gallery.php" class="gallery-item gallery-item-home">
+                    <div class="gallery-item-media">
+                        <img src="<?php echo htmlspecialchars($item['image_path']); ?>" alt="<?php echo htmlspecialchars($item['title']); ?>" loading="lazy" width="960" height="720">
+                    </div>
                     <div class="gallery-overlay">
-                        <div>
-                            <h4 style="font-size: 1.1rem; font-weight: 600;"><?php echo htmlspecialchars($item['title']); ?></h4>
-                            <p style="font-size: 0.85rem;"><?php echo htmlspecialchars($item['description'] ?? ''); ?></p>
+                        <div class="gallery-overlay-inner">
+                            <h4><?php echo htmlspecialchars($item['title']); ?></h4>
+                            <?php if (!empty($item['description'])): ?>
+                            <p><?php echo htmlspecialchars($item['description']); ?></p>
+                            <?php endif; ?>
                         </div>
                     </div>
-                </div>
+                </a>
             <?php endforeach; ?>
         </div>
     </div>

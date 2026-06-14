@@ -5,11 +5,11 @@ $home_equipment = $db->query("SELECT * FROM cms_equipment ORDER BY sequence ASC"
 <!-- Laboratory Equipment Section -->
 <section class="equipment-section section-padding">
     <div class="container">
-        <div class="section-header">
-            <span class="section-tag">Clinical Equipment</span>
-            <h2 class="section-title">Our Advanced Clinical Laboratory Infrastructure</h2>
-            <p class="section-desc max-w-md">We process patient samples using state-of-the-art automated diagnostic machinery for high speed and accuracy.</p>
-        </div>
+        <?php renderSectionHeader($cms_sections, 'equipment', [
+            'tag' => 'Clinical Equipment',
+            'title' => 'Our Advanced Clinical Laboratory Infrastructure',
+            'desc' => 'We process patient samples using state-of-the-art automated diagnostic machinery for high speed and accuracy.',
+        ]); ?>
         
         <div class="equipment-grid">
             <?php foreach ($home_equipment as $eq): ?>

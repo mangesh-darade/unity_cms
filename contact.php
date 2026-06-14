@@ -1,135 +1,146 @@
 <?php
-$active_nav = 'contact';
-$page_title = "Contact Us | Diagnostic Lab Location & Helpline";
-$meta_description = "Get in touch with Unity Clinical Laboratory. Find our location address, helpline phone numbers, email address, and send general test inquiries.";
-
 include 'includes/db.php';
+require_once 'includes/captcha.php';
+
+$page = cmsPage($cms_pages, 'contact', [
+    'meta_title' => 'Contact Us | Diagnostic Lab Location & Helpline',
+    'meta_description' => 'Get in touch with Unity Clinical Laboratory for bookings, reports, and inquiries.',
+]);
+$cms_page_context = $page;
+$active_nav = 'contact';
+$page_title = $page['meta_title'];
+$meta_description = $page['meta_description'];
+$meta_keywords = $page['meta_keywords'] ?? null;
+
+$support_phone = cmsSetting($cms, 'support_phone');
+$support_email = cmsSetting($cms, 'support_email');
+$support_address = cmsSetting($cms, 'support_address');
+$whatsapp_num = preg_replace('/[^0-9]/', '', cmsSetting($cms, 'whatsapp_number'));
+$phone_href = preg_replace('/[^0-9+]/', '', $support_phone);
+$maps_url = cmsSetting($cms, 'maps_embed_url');
+$home_collection_note = cmsSetting($cms, 'footer_home_collection_note', 'Home collection requests are serviced from 6:00 AM daily.');
+
 include 'includes/header.php';
 ?>
 
-<!-- Page Title Header -->
-<div class="page-header">
-    <div class="container">
-        <h1>Contact Us</h1>
-        <div class="breadcrumb">
-            <a href="index.php">Home</a> &nbsp;/&nbsp; Contact Us
-        </div>
-    </div>
-</div>
+<?php renderPageHeader($page, 'Contact Us', 'Contact Us'); ?>
 
-<!-- Contact Information and Form Grid -->
 <section class="section-padding">
     <div class="container">
-        <div class="section-header">
-            <span class="section-tag">Helpline Support</span>
-            <h2 class="section-title">We are Here to Assist You</h2>
-            <p class="section-desc max-w-md">Reach out to book a test, query report status, or explore corporate checkup partnerships.</p>
-        </div>
-        
-        <div class="contact-grid">
-            <!-- Left Column: Contact details and Map -->
-            <div class="contact-info-list">
-                <div class="card" style="padding: 30px;">
-                    <h3 style="font-size: 1.3rem; margin-bottom: 20px; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 10px;">Contact Information</h3>
-                    
-                    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <?php renderSectionHeader($cms_sections, 'contact', [
+            'tag' => $page['content_tag'] ?: 'Helpline Support',
+            'title' => $page['content_title'] ?: 'We are Here to Assist You',
+            'desc' => $page['content_description'] ?: 'Reach out to book a test, query report status, or explore corporate checkup partnerships.',
+        ]); ?>
+
+        <div class="contact-grid reveal">
+            <div class="contact-info-list reveal-stagger">
+                <div class="card contact-card">
+                    <h3 class="contact-card-title"><i class="fa-solid fa-address-book"></i> Contact Information</h3>
+                    <div class="contact-items-stack">
+                        <?php if ($support_address !== ''): ?>
                         <div class="contact-item">
                             <div class="contact-icon"><i class="fa-solid fa-location-dot"></i></div>
                             <div class="contact-detail">
                                 <h3>Laboratory Address</h3>
-                                <p>102 Health Plaza, Sector 15, Gurugram, Haryana - 122001</p>
+                                <p><?php echo nl2br(htmlspecialchars($support_address)); ?></p>
                             </div>
                         </div>
-                        
+                        <?php endif; ?>
+
+                        <?php if ($support_phone !== ''): ?>
                         <div class="contact-item">
                             <div class="contact-icon"><i class="fa-solid fa-phone"></i></div>
                             <div class="contact-detail">
                                 <h3>Helpline Number</h3>
-                                <p><a href="tel:+919876543210" style="color: var(--brand-blue); font-weight: 600;">+91 98765 43210</a></p>
+                                <p><a href="tel:<?php echo htmlspecialchars($phone_href); ?>" class="contact-link"><?php echo htmlspecialchars($support_phone); ?></a></p>
                             </div>
                         </div>
+                        <?php endif; ?>
 
+                        <?php if ($support_email !== ''): ?>
                         <div class="contact-item">
                             <div class="contact-icon"><i class="fa-solid fa-envelope"></i></div>
                             <div class="contact-detail">
                                 <h3>Email Support</h3>
-                                <p><a href="mailto:info@unityclinicallab.com" style="color: var(--brand-blue); font-weight: 600;">info@unityclinicallab.com</a></p>
+                                <p><a href="mailto:<?php echo htmlspecialchars($support_email); ?>" class="contact-link"><?php echo htmlspecialchars($support_email); ?></a></p>
                             </div>
                         </div>
+                        <?php endif; ?>
 
+                        <?php if ($whatsapp_num !== ''): ?>
                         <div class="contact-item">
-                            <div class="contact-icon" style="color: #25d366; background-color: rgba(37, 211, 102, 0.1);"><i class="fa-brands fa-whatsapp"></i></div>
+                            <div class="contact-icon contact-icon-whatsapp"><i class="fa-brands fa-whatsapp"></i></div>
                             <div class="contact-detail">
                                 <h3>WhatsApp Support</h3>
-                                <p><a href="https://wa.me/919876543210?text=Hi,%20I%20have%20a%20query%20about%20my%20lab%20test." target="_blank" style="color: #25d366; font-weight: 700;">Chat Live with Us</a></p>
+                                <p><a href="https://wa.me/<?php echo htmlspecialchars($whatsapp_num); ?>?text=Hi,%20I%20have%20a%20query%20about%20my%20lab%20test." target="_blank" rel="noopener noreferrer" class="contact-link contact-link-whatsapp">Chat Live with Us</a></p>
                             </div>
                         </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
-                <div class="card" style="padding: 30px;">
-                    <h3 style="font-size: 1.3rem; margin-bottom: 20px; color: var(--primary); border-bottom: 1px solid var(--border); padding-bottom: 10px;">Operating Hours</h3>
-                    <ul style="list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
-                        <li style="display: flex; justify-content: space-between;">
-                            <strong>Monday - Saturday:</strong>
-                            <span>07:00 AM - 09:00 PM</span>
+                <div class="card contact-card">
+                    <h3 class="contact-card-title"><i class="fa-solid fa-clock"></i> Operating Hours</h3>
+                    <ul class="hours-list">
+                        <li>
+                            <strong><?php echo htmlspecialchars(cmsSetting($cms, 'footer_weekday_label', 'Mon - Sat:')); ?></strong>
+                            <span><?php echo htmlspecialchars(cmsSetting($cms, 'working_hours_weekday', '07:00 AM - 09:00 PM')); ?></span>
                         </li>
-                        <li style="display: flex; justify-content: space-between;">
-                            <strong>Sunday:</strong>
-                            <span>07:00 AM - 02:00 PM</span>
+                        <li>
+                            <strong><?php echo htmlspecialchars(cmsSetting($cms, 'footer_sunday_label', 'Sunday:')); ?></strong>
+                            <span><?php echo htmlspecialchars(cmsSetting($cms, 'working_hours_sunday', '07:00 AM - 02:00 PM')); ?></span>
                         </li>
-                        <li style="color: var(--text-muted); font-size: 0.85rem; border-top: 1px dashed var(--border); padding-top: 8px; margin-top: 8px;">
-                            <i class="fa-solid fa-truck-medical"></i> Home collection requests are serviced from 6:00 AM daily.
+                        <?php if ($home_collection_note !== ''): ?>
+                        <li class="hours-note">
+                            <i class="fa-solid fa-truck-medical"></i> <?php echo htmlspecialchars($home_collection_note); ?>
                         </li>
+                        <?php endif; ?>
                     </ul>
                 </div>
             </div>
-            
-            <!-- Right Column: Inquiry Form Card -->
-            <div class="booking-form-card" style="box-shadow: var(--shadow-md); border-radius: var(--radius-md);">
-                <h3 style="font-size: 1.5rem; margin-bottom: 24px; text-align: center; color: var(--primary);"><i class="fa-solid fa-envelope-open-text" style="color: var(--brand-teal);"></i> Diagnostic Inquiry Form</h3>
+
+            <div class="booking-form-card premium-form-card reveal reveal-delay-2">
+                <div class="form-card-header">
+                    <span class="form-card-icon"><i class="fa-solid fa-envelope-open-text"></i></span>
+                    <h3>Diagnostic Inquiry Form</h3>
+                    <p>We typically respond within 30 minutes during lab hours.</p>
+                </div>
                 <form id="inquiryForm">
                     <div class="form-group">
                         <label for="name" class="form-label">Your Full Name</label>
                         <input type="text" id="name" name="name" class="form-control" placeholder="Enter name" required>
                     </div>
-                    
                     <div class="form-group">
                         <label for="mobile" class="form-label">Mobile Number</label>
                         <input type="tel" id="mobile" name="mobile" class="form-control" placeholder="Enter 10-digit mobile" required>
                     </div>
-                    
                     <div class="form-group">
                         <label for="email" class="form-label">Email Address</label>
                         <input type="email" id="email" name="email" class="form-control" placeholder="name@example.com" required>
                     </div>
-
                     <div class="form-group">
                         <label for="subject" class="form-label">Inquiry Subject</label>
                         <input type="text" id="subject" name="subject" class="form-control" placeholder="e.g. Health packages, test discounts, report correction" required>
                     </div>
-                    
                     <div class="form-group">
                         <label for="message" class="form-label">Message Details</label>
                         <textarea id="message" name="message" class="form-control" placeholder="Write details about the tests you require, or any questions you have for our pathologists..." required></textarea>
                     </div>
-                    
-                    <button type="submit" class="btn btn-primary w-full" style="margin-top: 10px;">
+                    <?php if (captchaEnabled($cms)) { echo renderCaptchaField(); } ?>
+                    <button type="submit" class="btn btn-primary w-full">
                         <i class="fa-solid fa-paper-plane"></i> Submit Inquiry Details
                     </button>
                 </form>
             </div>
         </div>
-        
-        <!-- Google Map Iframe Section -->
-        <div style="margin-top: 50px;">
-            <div class="map-container" style="height: 400px; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-md);">
-                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m18!1m2!1s0x390d19d6d5555555%3A0x8e82efc6ff6222b6!2sSector%2015%2C%20Gurugram%2C%20Haryana!5e0!3m2!1sen!2sin!4v1680000000000!5m2!1sen!2sin" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" style="width: 100%; height: 100%; border: 0;"></iframe>
-            </div>
+
+        <?php if ($maps_url !== ''): ?>
+        <div class="map-container map-container-premium reveal">
+            <iframe src="<?php echo htmlspecialchars($maps_url); ?>" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Laboratory location map"></iframe>
         </div>
+        <?php endif; ?>
     </div>
 </section>
 
-<?php
-include 'includes/footer.php';
-?>
+<?php include 'includes/footer.php'; ?>

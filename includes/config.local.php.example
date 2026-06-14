@@ -1,0 +1,13 @@
+<?php
+/**
+ * Copy to includes/config.local.php and adjust for production.
+ */
+// define('BASE_URL', 'https://yourdomain.com/unity_cms/');
+// define('APP_DEBUG', false);
+
+// Database: 'sqlite' (default) or 'mysql'
+// define('DB_DRIVER', 'mysql');
+// define('DB_HOST', '127.0.0.1');
+// define('DB_NAME', 'unity_cms');
+// define('DB_USER', 'root');
+// define('DB_PASS', '');

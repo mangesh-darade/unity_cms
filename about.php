@@ -1,126 +1,107 @@
 <?php
-$active_nav = 'about';
-$page_title = "About Us | Accreditations & Quality Standards";
-$meta_description = "Unity Clinical Laboratory is an ISO 9001:2015 and NABL aligned diagnostic pathology lab committed to accurate diagnostics, run by certified pathologists.";
-
 include 'includes/db.php';
+
+$page = cmsPage($cms_pages, 'about', [
+    'meta_title' => 'About Us | Accreditations & Quality Standards',
+    'meta_description' => 'Unity Clinical Laboratory is an ISO 9001:2015 and NABL aligned diagnostic pathology lab committed to accurate diagnostics, run by certified pathologists.',
+]);
+$cms_page_context = $page;
+$active_nav = 'about';
+$page_title = $page['meta_title'];
+$meta_description = $page['meta_description'];
+$meta_keywords = $page['meta_keywords'] ?? null;
+
 include 'includes/header.php';
+
+$blocks = cmsPageBlocks($db, 'about');
+$intro = cmsPageBlocksByType($blocks, 'intro')[0] ?? null;
+$badges = cmsPageBlocksByType($blocks, 'badge');
+$headers = cmsPageBlocksByType($blocks, 'header');
+$features = cmsPageBlocksByType($blocks, 'feature');
+$team = cmsPageBlocksByType($blocks, 'team');
+$valuesHeader = $headers[0] ?? null;
+$teamHeader = $headers[1] ?? null;
 ?>
 
-<!-- Page Title Header -->
-<div class="page-header">
-    <div class="container">
-        <h1>About Our Laboratory</h1>
-        <div class="breadcrumb">
-            <a href="index.php">Home</a> &nbsp;/&nbsp; About Us
-        </div>
-    </div>
-</div>
+<?php renderPageHeader($page, 'About Our Laboratory', 'About Us'); ?>
 
-<!-- Bio & Standard Section -->
 <section class="section-padding">
     <div class="container">
-        <div class="grid-2 align-center">
+        <div class="grid-2 align-center reveal">
             <div>
-                <span class="section-tag" style="margin-bottom: 10px;">Our Background</span>
-                <h2 style="font-size: 2.2rem; margin-bottom: 20px;">Dedicated to Precision and Patient Care since 2012</h2>
-                <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 1.05rem;">Unity Clinical Laboratory was founded with a single mission: to deliver accurate, reproducible, and fast diagnostic results. We understand that behind every blood vial is a patient awaiting critical answers. That is why we employ rigorous validation controls and fully automated systems to prevent manual errors.</p>
-                <p style="color: var(--text-muted); margin-bottom: 20px;">We adhere strictly to the National Accreditation Board for Testing and Calibration Laboratories (NABL) guidelines. Our facility is equipped with automated barcoding systems, ensuring sample identification tracking is flawless from sample draw to final digital signature.</p>
-                
-                <div style="display: flex; gap: 15px; margin-top: 30px;">
-                    <div style="background-color: var(--brand-teal-bg); border-left: 4px solid var(--brand-teal); padding: 15px; border-radius: 4px; flex: 1;">
-                        <h4 style="color: var(--brand-teal); font-weight: 700; margin-bottom: 4px;">NABL Aligned</h4>
-                        <p style="font-size: 0.85rem; color: var(--text-muted);">Complies with ISO 15189 standards for diagnostic competence.</p>
+                <?php if ($intro): ?>
+                    <?php if (!empty($intro['subtitle'])): ?><span class="section-tag"><?php echo htmlspecialchars($intro['subtitle']); ?></span><?php endif; ?>
+                    <h2 class="section-title" style="text-align:left;margin-top:12px;"><?php echo htmlspecialchars($intro['title']); ?></h2>
+                    <?php foreach (explode("\n\n", (string) $intro['content']) as $para): ?>
+                        <?php if (trim($para) !== ''): ?><p class="section-desc" style="text-align:left;margin:16px 0;"><?php echo htmlspecialchars(trim($para)); ?></p><?php endif; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+
+                <?php if (!empty($badges)): ?>
+                <div class="reveal-stagger" style="display:flex;gap:15px;margin-top:30px;flex-wrap:wrap;">
+                    <?php foreach ($badges as $badge): ?>
+                    <div class="about-badge-card">
+                        <h4><?php echo htmlspecialchars($badge['title']); ?></h4>
+                        <p><?php echo htmlspecialchars($badge['content']); ?></p>
                     </div>
-                    <div style="background-color: var(--brand-teal-bg); border-left: 4px solid var(--brand-teal); padding: 15px; border-radius: 4px; flex: 1;">
-                        <h4 style="color: var(--brand-teal); font-weight: 700; margin-bottom: 4px;">ISO Certified</h4>
-                        <p style="font-size: 0.85rem; color: var(--text-muted);">ISO 9001:2015 certified quality management systems.</p>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
+                <?php endif; ?>
             </div>
-            
             <div>
-                <img src="images/hero-lab.jpg" alt="Clinical Laboratory Facility" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-xl);">
+                <img src="<?php echo htmlspecialchars($intro['image_path'] ?? 'images/gallery/web/blood-collection.jpg'); ?>" alt="Clinical Laboratory Facility" class="about-intro-img">
             </div>
         </div>
     </div>
 </section>
 
-<!-- Values Section -->
-<section class="section-padding" style="background-color: var(--bg-light); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+<?php if ($valuesHeader || !empty($features)): ?>
+<section class="section-padding section-alt">
     <div class="container">
         <div class="section-header">
-            <span class="section-tag">Principles</span>
-            <h2 class="section-title">Our Laboratory Core Values</h2>
-            <p class="section-desc max-w-md">Our daily clinical operations are built upon four fundamental cornerstones of modern healthcare.</p>
+            <?php if ($valuesHeader): ?>
+                <span class="section-tag"><?php echo htmlspecialchars($valuesHeader['title']); ?></span>
+                <h2 class="section-title"><?php echo htmlspecialchars($valuesHeader['subtitle']); ?></h2>
+                <p class="section-desc max-w-md"><?php echo htmlspecialchars($valuesHeader['content']); ?></p>
+            <?php endif; ?>
         </div>
-        
-        <div class="grid-4">
-            <div class="card" style="background-color: var(--white); text-align: center; padding: 30px 20px;">
-                <div class="service-icon" style="color: var(--brand-teal); background-color: var(--brand-teal-bg);"><i class="fa-solid fa-clipboard-check"></i></div>
-                <h3 style="font-size: 1.2rem; margin-bottom: 10px;">Absolute Integrity</h3>
-                <p style="font-size: 0.9rem; color: var(--text-muted);">Uncompromised quality standards with strict internal control assays and zero tolerance for report errors.</p>
+        <div class="grid-4 reveal-stagger">
+            <?php foreach ($features as $feature): ?>
+            <div class="card" style="text-align:center;padding:30px 20px;">
+                <div class="service-icon"><i class="<?php echo htmlspecialchars($feature['icon'] ?: 'fa-solid fa-circle-check'); ?>"></i></div>
+                <h3 style="font-size:1.2rem;margin:16px 0 10px;"><?php echo htmlspecialchars($feature['title']); ?></h3>
+                <p style="font-size:0.9rem;color:var(--text-muted);"><?php echo htmlspecialchars($feature['content']); ?></p>
             </div>
-            <div class="card" style="background-color: var(--white); text-align: center; padding: 30px 20px;">
-                <div class="service-icon" style="color: var(--brand-teal); background-color: var(--brand-teal-bg);"><i class="fa-solid fa-user-doctor"></i></div>
-                <h3 style="font-size: 1.2rem; margin-bottom: 10px;">Patient First</h3>
-                <p style="font-size: 0.9rem; color: var(--text-muted);">Dedicated to safety, gentle sample collection technique, responsive counseling, and patient confidentiality.</p>
-            </div>
-            <div class="card" style="background-color: var(--white); text-align: center; padding: 30px 20px;">
-                <div class="service-icon" style="color: var(--brand-teal); background-color: var(--brand-teal-bg);"><i class="fa-solid fa-microscope"></i></div>
-                <h3 style="font-size: 1.2rem; margin-bottom: 10px;">Advanced Tech</h3>
-                <p style="font-size: 0.9rem; color: var(--text-muted);">Investing continuously in the latest chemistry, hematology, and immunodiagnostic analyzer modules.</p>
-            </div>
-            <div class="card" style="background-color: var(--white); text-align: center; padding: 30px 20px;">
-                <div class="service-icon" style="color: var(--brand-teal); background-color: var(--brand-teal-bg);"><i class="fa-solid fa-shield-halved"></i></div>
-                <h3 style="font-size: 1.2rem; margin-bottom: 10px;">Safe Cold-Chain</h3>
-                <p style="font-size: 0.9rem; color: var(--text-muted);">Strict temperature control protocol during home collection transport to protect sample degradation.</p>
-            </div>
+            <?php endforeach; ?>
         </div>
     </div>
 </section>
+<?php endif; ?>
 
-<!-- Pathologist Profiles Section -->
+<?php if ($teamHeader || !empty($team)): ?>
 <section class="section-padding">
     <div class="container">
         <div class="section-header">
-            <span class="section-tag">Medical Directors</span>
-            <h2 class="section-title">Meet Our Diagnostic Experts</h2>
-            <p class="section-desc max-w-md">Our laboratory reports are verified and signed by board-certified clinical pathologists.</p>
+            <?php if ($teamHeader): ?>
+                <span class="section-tag"><?php echo htmlspecialchars($teamHeader['title']); ?></span>
+                <h2 class="section-title"><?php echo htmlspecialchars($teamHeader['subtitle']); ?></h2>
+                <p class="section-desc max-w-md"><?php echo htmlspecialchars($teamHeader['content']); ?></p>
+            <?php endif; ?>
         </div>
-        
-        <div class="grid-3">
-            <!-- Doctor 1 -->
-            <div class="card" style="display: flex; gap: 20px; align-items: center; padding: 30px; flex-direction: column; text-align: center;">
-                <div class="author-avatar" style="width: 100px; height: 100px; font-size: 2.2rem; border-radius: 50%; flex-shrink: 0; background: linear-gradient(135deg, var(--brand-blue), var(--brand-teal));">SV</div>
+        <div class="grid-3 reveal-stagger">
+            <?php foreach ($team as $member): ?>
+            <div class="card team-card">
+                <div class="author-avatar team-avatar"><?php echo htmlspecialchars($member['icon'] ?: substr($member['title'], 0, 2)); ?></div>
                 <div>
-                    <h3 style="font-size: 1.3rem; margin-bottom: 4px;">Dr. Sunita Verma</h3>
-                    <p style="color: var(--brand-teal); font-weight: 600; font-size: 0.9rem; margin-bottom: 10px;">Chief Pathologist & Medical Director</p>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">Dr. Sunita holds an MD in Pathology from AIIMS Delhi with over 15 years of diagnostic laboratory experience. She specializes in clinical biochemistry validation.</p>
+                    <h3 style="font-size:1.3rem;margin-bottom:4px;"><?php echo htmlspecialchars($member['title']); ?></h3>
+                    <p style="color:var(--brand-teal);font-weight:600;font-size:0.9rem;margin-bottom:10px;"><?php echo htmlspecialchars($member['subtitle']); ?></p>
+                    <p style="color:var(--text-muted);font-size:0.9rem;line-height:1.6;"><?php echo htmlspecialchars($member['content']); ?></p>
                 </div>
             </div>
-            <!-- Doctor 2 -->
-            <div class="card" style="display: flex; gap: 20px; align-items: center; padding: 30px; flex-direction: column; text-align: center;">
-                <div class="author-avatar" style="width: 100px; height: 100px; font-size: 2.2rem; border-radius: 50%; flex-shrink: 0; background: linear-gradient(135deg, var(--brand-blue), var(--brand-teal));">RG</div>
-                <div>
-                    <h3 style="font-size: 1.3rem; margin-bottom: 4px;">Dr. Raman Gupta</h3>
-                    <p style="color: var(--brand-teal); font-weight: 600; font-size: 0.9rem; margin-bottom: 10px;">Senior Microbiologist</p>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">Dr. Raman completed his MD in Medical Microbiology and specializes in immunology, culture analytics, and infectious disease diagnostics with over 12 years of clinical service.</p>
-                </div>
-            </div>
-            <!-- Staff 3 -->
-            <div class="card" style="display: flex; gap: 20px; align-items: center; padding: 30px; flex-direction: column; text-align: center;">
-                <div class="author-avatar" style="width: 100px; height: 100px; font-size: 2.2rem; border-radius: 50%; flex-shrink: 0; background: linear-gradient(135deg, var(--brand-blue), var(--brand-teal));">AR</div>
-                <div>
-                    <h3 style="font-size: 1.3rem; margin-bottom: 4px;">Akshay Sanjay Rakh</h3>
-                    <p style="color: var(--brand-teal); font-weight: 600; font-size: 0.9rem; margin-bottom: 10px;">Senior Lab Technician (ADMLT)</p>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">Akshay holds an Advanced Diploma in Medical Laboratory Technology (ADMLT) with First Class Distinction. He oversees laboratory instrumentation, sample runs, and quality assurance controls.</p>
-                </div>
-            </div>
+            <?php endforeach; ?>
         </div>
     </div>
 </section>
+<?php endif; ?>
 
-<?php
-include 'includes/footer.php';
-?>
+<?php include 'includes/footer.php'; ?>

@@ -5,13 +5,13 @@ $home_packages = $db->query("SELECT * FROM cms_packages ORDER BY sequence ASC LI
 <!-- Health Packages Section -->
 <section class="packages-section section-padding">
     <div class="container">
-        <div class="section-header">
-            <span class="section-tag">Value Health Plans</span>
-            <h2 class="section-title">Affordable Health Checkup Packages</h2>
-            <p class="section-desc max-w-md">Select from our specially curated health packages for comprehensive wellness monitoring.</p>
-        </div>
-        <div class="grid-3">
-            <?php foreach ($home_packages as $package): 
+        <?php renderSectionHeader($cms_sections, 'packages', [
+            'tag' => 'Value Health Plans',
+            'title' => 'Affordable Health Checkup Packages',
+            'desc' => 'Select from our specially curated health packages for comprehensive wellness monitoring.',
+        ]); ?>
+        <div class="grid-3 reveal-stagger">
+            <?php foreach ($home_packages as $package):
                 $is_featured = (int)$package['is_featured'] === 1;
                 // Parse features list separated by newlines
                 $features = array_filter(explode("\n", $package['features'] ?? ''));

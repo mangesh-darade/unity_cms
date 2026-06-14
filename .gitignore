@@ -1,0 +1,18 @@
+# Database and patient data
+database.sqlite
+database.sqlite-journal
+storage/
+
+# Uploaded lab reports (PHI — never commit)
+uploads/*.pdf
+uploads/*.PDF
+
+# Environment overrides
+.env
+includes/config.local.php
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -15,13 +15,13 @@ function getInitials($name) {
 <!-- Patient Testimonials Section -->
 <section class="testimonials-section section-padding">
     <div class="container">
-        <div class="section-header">
-            <span class="section-tag">Reviews</span>
-            <h2 class="section-title">What Our Patients Say</h2>
-            <p class="section-desc max-w-md">Read testimonials from patients who experienced our prompt home collection and accurate reporting services.</p>
-        </div>
+        <?php renderSectionHeader($cms_sections, 'testimonials', [
+            'tag' => 'Reviews',
+            'title' => 'What Our Patients Say',
+            'desc' => 'Read testimonials from patients who experienced our prompt home collection and accurate reporting services.',
+        ]); ?>
         
-        <div class="testimonials-carousel">
+        <div class="testimonials-carousel reveal-stagger">
             <?php foreach ($home_testimonials as $test): ?>
                 <div class="testimonial-card">
                     <p class="testimonial-text">"<?php echo htmlspecialchars($test['text']); ?>"</p>

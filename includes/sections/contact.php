@@ -1,11 +1,11 @@
 <!-- Contact Section -->
 <section class="contact-section section-padding" style="border-top: 1px solid var(--border);">
     <div class="container">
-        <div class="section-header">
-            <span class="section-tag">Reach Us</span>
-            <h2 class="section-title">Get In Touch With Unity Lab</h2>
-            <p class="section-desc max-w-md">Find our location details or send an immediate diagnostic inquiry through the contact form.</p>
-        </div>
+        <?php renderSectionHeader($cms_sections, 'contact', [
+            'tag' => 'Reach Us',
+            'title' => 'Get In Touch With Unity Lab',
+            'desc' => 'Find our location details or send an immediate diagnostic inquiry through the contact form.',
+        ]); ?>
         
         <div class="contact-grid">
             <!-- Info & Map -->
@@ -14,14 +14,14 @@
                     <div class="contact-icon"><i class="fa-solid fa-location-arrow"></i></div>
                     <div class="contact-detail">
                         <h3>Laboratory Address</h3>
-                        <p><?php echo htmlspecialchars($cms['support_address'] ?? '102 Health Plaza, Sector 15, Gurugram, Haryana - 122001'); ?></p>
+                        <p><?php echo htmlspecialchars($cms['support_address'] ?? 'Unity Clinical Laboratory, Maharashtra, India'); ?></p>
                     </div>
                 </div>
                 <div class="contact-item">
                     <div class="contact-icon"><i class="fa-solid fa-phone"></i></div>
                     <div class="contact-detail">
                         <h3>Call Support</h3>
-                        <p><a href="tel:<?php echo preg_replace('/[^0-9+]/', '', $cms['support_phone']); ?>"><?php echo htmlspecialchars($cms['support_phone'] ?? '+91 98765 43210'); ?></a></p>
+                        <p><a href="tel:<?php echo preg_replace('/[^0-9+]/', '', $cms['support_phone']); ?>"><?php echo htmlspecialchars($cms['support_phone'] ?? '+91 98507 00268'); ?></a></p>
                     </div>
                 </div>
                 <div class="contact-item">

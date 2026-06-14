@@ -1,9 +1,15 @@
 <?php
 include 'includes/db.php';
 
+$page = cmsPage($cms_pages, 'packages', [
+    'meta_title' => 'Preventive Health Packages | Comprehensive Health Checkups',
+    'meta_description' => 'Choose from our preventive health packages. Comprehensive blood screening at Unity Lab.',
+]);
+$cms_page_context = $page;
 $active_nav = 'packages';
-$page_title = "Preventive Health Packages | Comprehensive Health Checkups";
-$meta_description = "Choose from our 5+ preventive health packages. Comprehensive blood screening, lipid checks, liver & kidney tests at Unity Lab starting from ₹499.";
+$page_title = $page['meta_title'];
+$meta_description = $page['meta_description'];
+$meta_keywords = $page['meta_keywords'] ?? null;
 
 include 'includes/header.php';
 
@@ -15,26 +21,18 @@ try {
 }
 ?>
 
-<!-- Page Title Header -->
-<div class="page-header">
-    <div class="container">
-        <h1>Preventive Health Packages</h1>
-        <div class="breadcrumb">
-            <a href="index.php">Home</a> &nbsp;/&nbsp; Health Packages
-        </div>
-    </div>
-</div>
+<?php renderPageHeader($page, 'Preventive Health Packages', 'Health Packages'); ?>
 
 <!-- Health Packages Section -->
 <section class="section-padding">
     <div class="container">
-        <div class="section-header">
-            <span class="section-tag">Wellness Packages</span>
-            <h2 class="section-title">Select the Best Health Package for You</h2>
-            <p class="section-desc max-w-md">Regular clinical screenings are the foundation of healthy living. Select a package and schedule a home collection appointment today.</p>
-        </div>
+        <?php renderPageSectionHeader($page, [
+            'tag' => 'Wellness Packages',
+            'title' => 'Select the Best Health Package for You',
+            'desc' => 'Package prices are based on our official rate card. Book online or call us for home collection.',
+        ]); ?>
         
-        <div class="grid-3" style="align-items: stretch; gap: 30px;">
+        <div class="grid-3 reveal-stagger" style="align-items: stretch; gap: 30px;">
             <?php if (empty($packages)): ?>
                 <div class="text-center" style="grid-column: 1 / -1; padding: 40px;">No health packages found.</div>
             <?php else: ?>
@@ -48,7 +46,7 @@ try {
                         <?php endif; ?>
                         <h3 class="package-name"><?php echo htmlspecialchars($package['name']); ?></h3>
                         <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;"><?php echo htmlspecialchars($package['description'] ?? ''); ?></p>
-                        <div class="package-price">₹<?php echo number_format($package['price']); ?> <span>/ Only</span></div>
+                        <div class="package-price">₹<?php echo number_format($package['price']); ?> <span>/ package</span></div>
                         
                         <h4 style="font-size: 0.95rem; margin-bottom: 12px; color: var(--primary-light);"><i class="fa-solid fa-list-check"></i> Includes tests:</h4>
                         <ul class="package-features" style="margin-bottom: 30px;">

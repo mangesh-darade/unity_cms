@@ -5,11 +5,11 @@ $home_faqs = $db->query("SELECT * FROM cms_faqs ORDER BY sequence ASC")->fetchAl
 <!-- FAQ Section -->
 <section class="faq-section section-padding">
     <div class="container">
-        <div class="section-header">
-            <span class="section-tag">Help Desk</span>
-            <h2 class="section-title">Frequently Asked Questions</h2>
-            <p class="section-desc max-w-md">Get answers to the most common queries regarding booking, home visits, and reporting.</p>
-        </div>
+        <?php renderSectionHeader($cms_sections, 'faqs', [
+            'tag' => 'Help Desk',
+            'title' => 'Frequently Asked Questions',
+            'desc' => 'Get answers to the most common queries regarding booking, home visits, and reporting.',
+        ]); ?>
         
         <!-- Accordion FAQ -->
         <div class="faq-grid">

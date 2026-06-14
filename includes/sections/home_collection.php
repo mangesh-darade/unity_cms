@@ -1,5 +1,6 @@
 <?php
 // Fetch services and packages for the booking dropdown
+require_once __DIR__ . '/../captcha.php';
 $dropdown_services = $db->query("SELECT title, price FROM cms_services ORDER BY sequence ASC")->fetchAll();
 $dropdown_packages = $db->query("SELECT name, price FROM cms_packages ORDER BY sequence ASC")->fetchAll();
 ?>
@@ -9,9 +10,14 @@ $dropdown_packages = $db->query("SELECT name, price FROM cms_packages ORDER BY s
         <div class="booking-wrapper">
             <!-- Booking Information -->
             <div class="booking-info">
-                <span class="section-tag">Convenient Diagnostics</span>
-                <h2>Book a Home Sample Collection</h2>
-                <p style="color: var(--text-muted); margin-bottom: 30px;">Avoid long queues and diagnostic delays. Our certified and vaccinated phlebotomists will visit your home or workplace to collect blood or urine samples safely, maintaining the highest levels of clinical hygiene.</p>
+                <?php
+                $hc_tag = cmsSection($cms_sections, 'home_collection', 'section_tag', 'Convenient Diagnostics');
+                $hc_title = cmsSection($cms_sections, 'home_collection', 'section_heading', 'Book a Home Sample Collection');
+                $hc_desc = cmsSection($cms_sections, 'home_collection', 'section_description', 'Avoid long queues and diagnostic delays. Our certified and vaccinated phlebotomists will visit your home or workplace to collect blood or urine samples safely.');
+                ?>
+                <span class="section-tag"><?php echo htmlspecialchars($hc_tag); ?></span>
+                <h2><?php echo htmlspecialchars($hc_title); ?></h2>
+                <p style="color: var(--text-muted); margin-bottom: 30px;"><?php echo htmlspecialchars($hc_desc); ?></p>
                 
                 <div class="booking-info-list">
                     <div class="booking-info-item">
@@ -79,6 +85,7 @@ $dropdown_packages = $db->query("SELECT name, price FROM cms_packages ORDER BY s
                         <label for="booking_address" class="form-label">Full Collection Address</label>
                         <textarea id="booking_address" name="address" class="form-control" placeholder="House number, flat, street, landmark, area pin-code" required></textarea>
                     </div>
+                    <?php if (captchaEnabled($cms)) { echo renderCaptchaField(); } ?>
                     <button type="submit" class="btn btn-primary w-full"><i class="fa-solid fa-paper-plane"></i> Confirm Booking Request</button>
                 </form>
             </div>

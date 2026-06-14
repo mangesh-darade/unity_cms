@@ -5,8 +5,35 @@ requireAdmin();
 
 $msg = '';
 
+// Secure admin-only PDF download (no direct /uploads/ URLs)
+if (isset($_GET['download']) && (int) $_GET['download'] > 0) {
+    $report_id = (int) $_GET['download'];
+    try {
+        $stmt = $db->prepare("SELECT file_path, test_name, patient_id FROM reports WHERE id = :id");
+        $stmt->execute([':id' => $report_id]);
+        $report = $stmt->fetch();
+
+        if ($report) {
+            $file_path = realpath(__DIR__ . '/../' . $report['file_path']);
+            $uploads_root = realpath(__DIR__ . '/../uploads');
+
+            if ($file_path && $uploads_root && str_starts_with($file_path, $uploads_root) && is_file($file_path)) {
+                header('Content-Type: application/pdf');
+                header('Content-Disposition: inline; filename="' . $report['patient_id'] . '_' . preg_replace('/[^a-zA-Z0-9]/', '_', $report['test_name']) . '.pdf"');
+                header('Content-Length: ' . filesize($file_path));
+                readfile($file_path);
+                exit();
+            }
+        }
+    } catch (PDOException $e) {
+        // fall through to page render
+    }
+    $msg = '<div class="alert alert-error">Report file could not be opened.</div>';
+}
+
 // Handle Report Upload
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_report'])) {
+    requireCsrf();
     $patient_id = trim($_POST['patient_id']);
     $test_name = trim($_POST['test_name']);
     
@@ -25,17 +52,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_report'])) {
                 
                 // Destination path relative to project root
                 $db_file_path = 'uploads/' . $new_filename;
-                $server_destination = __DIR__ . '/../' . $db_file_path;
+                $server_destination = __DIR__ . '/../uploads/' . $new_filename;
                 
+                if (!is_dir(__DIR__ . '/../uploads')) {
+                    mkdir(__DIR__ . '/../uploads', 0755, true);
+                }
+
                 if (move_uploaded_file($file['tmp_name'], $server_destination)) {
                     try {
                         $stmt = $db->prepare("INSERT INTO reports (patient_id, test_name, file_path) VALUES (:patient_id, :test_name, :file_path)");
                         $stmt->execute([
                             ':patient_id' => $patient_id,
-                            ':test_name' => htmlspecialchars($test_name),
+                            ':test_name' => $test_name,
                             ':file_path' => $db_file_path
                         ]);
                         $msg = '<div class="alert alert-success">Report PDF uploaded and linked to <strong>' . htmlspecialchars($patient_id) . '</strong> successfully!</div>';
+                        require_once __DIR__ . '/../includes/notifications.php';
+                        notifyPatientReport($db, $cms, $patient_id, $test_name);
                     } catch (PDOException $e) {
                         // Clean up file if DB fails
                         unlink($server_destination);
@@ -178,7 +211,7 @@ $patients_list = $db->query("SELECT patient_id, name FROM patients ORDER BY name
                                             </td>
                                             <td><strong><?php echo htmlspecialchars($report['test_name']); ?></strong></td>
                                             <td>
-                                                <a href="../<?php echo htmlspecialchars($report['file_path']); ?>" target="_blank" style="color: var(--brand-blue); font-weight: 600;">
+                                                <a href="reports.php?download=<?php echo (int) $report['id']; ?>" target="_blank" style="color: var(--brand-blue); font-weight: 600;">
                                                     <i class="fa-solid fa-file-pdf" style="color: #ef4444;"></i> View PDF
                                                 </a>
                                             </td>
@@ -204,6 +237,7 @@ $patients_list = $db->query("SELECT patient_id, name FROM patients ORDER BY name
                 </div>
                 
                 <form action="reports.php" method="POST" enctype="multipart/form-data">
+                    <?php echo csrfField(); ?>
                     <div class="form-group">
                         <label for="patient_id" class="form-label">Select Patient <span style="color: #ef4444;">*</span></label>
                         <select id="patient_id" name="patient_id" class="form-control" required>

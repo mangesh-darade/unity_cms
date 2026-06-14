@@ -5,8 +5,40 @@ requireAdmin();
 
 $msg = '';
 
+// Handle notification & integration settings
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_notifications'])) {
+    requireCsrf();
+    try {
+        $keys = [
+            'notify_admin_email', 'mail_from_email', 'mail_from_name',
+            'sms_provider', 'msg91_api_key', 'msg91_sender_id'
+        ];
+        $stmt = $db->prepare(
+            dbDriver($db) === 'mysql'
+                ? 'REPLACE INTO cms_settings (`key`, value) VALUES (:key, :value)'
+                : 'INSERT OR REPLACE INTO cms_settings (key, value) VALUES (:key, :value)'
+        );
+        foreach ($keys as $k) {
+            if (isset($_POST[$k])) {
+                $stmt->execute([':key' => $k, ':value' => trim($_POST[$k])]);
+            }
+        }
+        $flags = ['notify_on_booking', 'notify_on_inquiry', 'notify_on_report', 'report_otp_enabled', 'captcha_enabled'];
+        foreach ($flags as $flag) {
+            $stmt->execute([':key' => $flag, ':value' => isset($_POST[$flag]) ? '1' : '0']);
+        }
+        foreach ($db->query('SELECT * FROM cms_settings')->fetchAll() as $row) {
+            $cms[$row['key']] = $row['value'];
+        }
+        $msg = '<div class="alert alert-success">Notification and security settings saved.</div>';
+    } catch (PDOException $e) {
+        $msg = '<div class="alert alert-error">Database error: ' . $e->getMessage() . '</div>';
+    }
+}
+
 // Handle Password Reset
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
+    requireCsrf();
     $current_pass = trim($_POST['current_pass']);
     $new_pass = trim($_POST['new_pass']);
     $confirm_pass = trim($_POST['confirm_pass']);
@@ -28,6 +60,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                         ':password' => $new_hash,
                         ':username' => $username
                     ]);
+                    $db->prepare("INSERT OR REPLACE INTO cms_settings (key, value) VALUES ('admin_password_changed', '1')")->execute();
+                    $cms['admin_password_changed'] = '1';
                     $msg = '<div class="alert alert-success">Password updated successfully!</div>';
                 } else {
                     $msg = '<div class="alert alert-error">Current password is incorrect.</div>';
@@ -102,6 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                 </div>
                 
                 <form action="settings.php" method="POST">
+                    <?php echo csrfField(); ?>
                     <div class="form-group">
                         <label for="current_pass" class="form-label">Current Password</label>
                         <input type="password" id="current_pass" name="current_pass" class="form-control" placeholder="Enter current password" required>
@@ -134,6 +169,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                     <p><i class="fa-solid fa-history" style="color: var(--brand-teal);"></i> <strong>Activity Logs:</strong> Security resets are recorded and sessions are cleared immediately, necessitating a fresh login.</p>
                 </div>
             </div>
+        </div>
+
+        <div class="admin-panel-card" style="margin-top: 30px;">
+            <div class="admin-card-header">
+                <h2>Email, SMS &amp; Security Notifications</h2>
+                <p style="font-size:0.85rem; color:#64748b;">Configure admin alerts, patient report OTP delivery, and form captcha.</p>
+            </div>
+            <form action="settings.php" method="POST">
+                <?php echo csrfField(); ?>
+                <div class="admin-form-row">
+                    <div class="form-group">
+                        <label class="form-label">Admin Notification Email</label>
+                        <input type="email" name="notify_admin_email" class="form-control" value="<?php echo htmlspecialchars($cms['notify_admin_email'] ?? $cms['support_email'] ?? ''); ?>" placeholder="lab-admin@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Mail From Email</label>
+                        <input type="email" name="mail_from_email" class="form-control" value="<?php echo htmlspecialchars($cms['mail_from_email'] ?? $cms['support_email'] ?? ''); ?>">
+                    </div>
+                </div>
+                <div class="admin-form-row">
+                    <div class="form-group">
+                        <label class="form-label">Mail From Name</label>
+                        <input type="text" name="mail_from_name" class="form-control" value="<?php echo htmlspecialchars($cms['mail_from_name'] ?? ($cms['site_name'] ?? 'Unity Clinical Laboratory')); ?>">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">SMS Provider</label>
+                        <select name="sms_provider" class="form-control">
+                            <option value="none" <?php echo ($cms['sms_provider'] ?? 'none') === 'none' ? 'selected' : ''; ?>>None (Email OTP only)</option>
+                            <option value="msg91" <?php echo ($cms['sms_provider'] ?? '') === 'msg91' ? 'selected' : ''; ?>>MSG91</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="admin-form-row">
+                    <div class="form-group">
+                        <label class="form-label">MSG91 API Key</label>
+                        <input type="text" name="msg91_api_key" class="form-control" value="<?php echo htmlspecialchars($cms['msg91_api_key'] ?? ''); ?>">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">MSG91 Sender ID</label>
+                        <input type="text" name="msg91_sender_id" class="form-control" value="<?php echo htmlspecialchars($cms['msg91_sender_id'] ?? 'UNITY'); ?>">
+                    </div>
+                </div>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin: 20px 0;">
+                    <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" name="notify_on_booking" value="1" <?php echo ($cms['notify_on_booking'] ?? '1') === '1' ? 'checked' : ''; ?>> Email admin on new booking</label>
+                    <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" name="notify_on_inquiry" value="1" <?php echo ($cms['notify_on_inquiry'] ?? '1') === '1' ? 'checked' : ''; ?>> Email admin on new inquiry</label>
+                    <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" name="notify_on_report" value="1" <?php echo ($cms['notify_on_report'] ?? '1') === '1' ? 'checked' : ''; ?>> Notify patient when report uploaded</label>
+                    <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" name="report_otp_enabled" value="1" <?php echo ($cms['report_otp_enabled'] ?? '1') === '1' ? 'checked' : ''; ?>> Require OTP for report download</label>
+                    <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" name="captcha_enabled" value="1" <?php echo ($cms['captcha_enabled'] ?? '1') === '1' ? 'checked' : ''; ?>> Captcha on public forms</label>
+                </div>
+                <p style="font-size:0.85rem; color:#64748b; margin-bottom:15px;"><i class="fa-solid fa-circle-info"></i> Email uses PHP <code>mail()</code>. OTP is sent to the patient's registered email, or via MSG91 SMS if configured.</p>
+                <button type="submit" name="save_notifications" class="btn btn-teal"><i class="fa-solid fa-bell"></i> Save Notification Settings</button>
+            </form>
+        </div>
+
+        <div class="admin-panel-card" style="margin-top: 30px;">
+            <div class="admin-card-header">
+                <h2>Database Configuration</h2>
+            </div>
+            <p style="font-size:0.95rem; line-height:1.7; color:var(--text-main);">
+                Current driver: <strong><?php echo htmlspecialchars(strtoupper(DB_DRIVER)); ?></strong>.
+                To use MySQL, copy <code>includes/config.local.php.example</code> to <code>includes/config.local.php</code>,
+                set <code>DB_DRIVER</code> to <code>mysql</code>, create the database, and reload the site.
+            </p>
         </div>
     </div>
 

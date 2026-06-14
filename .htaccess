@@ -1,0 +1,14 @@
+# Block direct access to SQLite database
+<Files "database.sqlite">
+    Require all denied
+</Files>
+
+# Block direct access to config includes if served accidentally
+<FilesMatch "^(config|security|auth|db)\.php$">
+    Require all denied
+</FilesMatch>
+
+# Optional: force HTTPS in production (uncomment when SSL is configured)
+# RewriteEngine On
+# RewriteCond %{HTTPS} off
+# RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]

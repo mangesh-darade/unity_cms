@@ -1,48 +1,30 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-// Retrieve settings from $cms global array (loaded in db.php)
-$site_name = $cms['site_name'] ?? "Unity Clinical Laboratory";
-$logo_text = $cms['logo_text'] ?? "UnityLab";
-$support_phone = $cms['support_phone'] ?? "+91 98765 43210";
-$support_email = $cms['support_email'] ?? "info@unityclinicallab.com";
-$whatsapp_num = $cms['whatsapp_number'] ?? "919876543210";
+require_once __DIR__ . '/security.php';
+initSecureSession();
 
-// Split logo text into two parts for styling (e.g. "UnityLab" -> "Unity" and "Lab")
-// We look for a capital letter or split in half, or just styled as brand-teal for the second word
-$logo_main = $logo_text;
-$logo_span = "";
-if (preg_match('/^([A-Z][a-z]+)([A-Z][A-Za-z]+)$/', $logo_text, $matches)) {
-    $logo_main = $matches[1];
-    $logo_span = $matches[2];
-} else {
-    // If not matching CamelCase, split in half
-    $len = strlen($logo_text);
-    if ($len > 4) {
-        $logo_main = substr($logo_text, 0, $len - 3);
-        $logo_span = substr($logo_text, $len - 3);
-    }
-}
+$site_name = cmsSetting($cms, 'site_name');
+$logo_text = cmsSetting($cms, 'logo_text');
+$support_phone = cmsSetting($cms, 'support_phone');
+$support_email = cmsSetting($cms, 'support_email');
+$whatsapp_num = cmsSetting($cms, 'whatsapp_number');
+[$logo_main, $logo_span] = cmsLogoParts($logo_text);
 
-$site_title = $site_name . " | Accurate Diagnostics & Blood Test Center";
-$site_description = "Unity Clinical Laboratory offers NABL accredited pathology services including blood, urine, biochemistry, thyroid, diabetes and full body health checkups with home sample collection.";
-$site_keywords = "laboratory, pathology lab, blood test, urine test, health checkup, home collection, NABL, diagnostic center";
+$cms_page_context = $cms_page_context ?? null;
+$page_meta = cmsPageMetaFromContext($cms, $cms_page_context, [
+    'title' => $page_title ?? null,
+    'description' => $meta_description ?? null,
+    'keywords' => $meta_keywords ?? null,
+    'og_image' => $og_image ?? null,
+    'og_type' => $og_type ?? 'website',
+    'noindex' => $robots_noindex ?? false,
+    'canonical' => $canonical_url ?? null,
+]);
 
-if (isset($page_title)) {
-    $site_title = $page_title . " - " . $site_name;
-}
-if (isset($meta_description)) {
-    $site_description = $meta_description;
-}
-
-// Active nav check helper
 function is_item_active($item_url, $active_nav) {
     $current_page = basename($_SERVER['PHP_SELF']);
     if ($current_page === $item_url) {
         return 'active';
     }
-    // Fallback mapping
     if ($active_nav === 'home' && $item_url === 'index.php') return 'active';
     if ($active_nav === 'about' && $item_url === 'about.php') return 'active';
     if ($active_nav === 'services' && $item_url === 'services.php') return 'active';
@@ -55,11 +37,55 @@ function is_item_active($item_url, $active_nav) {
     return '';
 }
 
-// Fetch dynamic menu navigation
 try {
-    $menu_items = $db->query("SELECT * FROM cms_menu WHERE is_active = 1 ORDER BY sequence ASC")->fetchAll();
+    $menu_items = $db->query('SELECT * FROM cms_menu WHERE is_active = 1 ORDER BY sequence ASC')->fetchAll();
 } catch (PDOException $e) {
     $menu_items = [];
+}
+
+$social_links = cmsSocialLinks($cms);
+$offer_link = cmsSetting($cms, 'top_offer_link');
+$offer_link_text = cmsSetting($cms, 'top_offer_link_text');
+$top_bar_location = cmsSetting($cms, 'top_bar_location');
+$header_logo_url = cmsSetting($cms, 'header_logo_url', 'index.php');
+$header_logo_width = max(40, min(400, (int) cmsSetting($cms, 'header_logo_width', '240')));
+$header_logo_height = max(30, min(200, (int) cmsSetting($cms, 'header_logo_height', '72')));
+$header_logo_display_h = min($header_logo_height, 80);
+$header_logo_display_w = min($header_logo_width, 280);
+$header_logo_style = sprintf(
+    '--header-logo-width:%dpx;--header-logo-height:%dpx;--header-logo-display-width:%dpx;--header-logo-display-height:%dpx;--header-logo-width-scrolled:%dpx;--header-logo-height-scrolled:%dpx;--header-logo-aspect:%s;',
+    $header_logo_width,
+    $header_logo_height,
+    $header_logo_display_w,
+    $header_logo_display_h,
+    (int) round($header_logo_display_w * 0.85),
+    (int) round($header_logo_display_h * 0.85),
+    $header_logo_display_h > 0 ? round($header_logo_display_w / $header_logo_display_h, 4) : '2'
+);
+$menu_toggle_label = cmsSetting($cms, 'header_menu_toggle_label', 'Toggle menu');
+$logo_icon = cmsSetting($cms, 'logo_icon', 'fa-solid fa-flask');
+$logo_image = cmsSetting($cms, 'logo_image');
+$logo_use_image = (($cms['logo_type'] ?? 'text') === 'image' && $logo_image !== '');
+if ($logo_use_image) {
+    $logo_file = __DIR__ . '/../' . ltrim(str_replace(['\\', '..'], ['/', ''], $logo_image), '/');
+    if (!is_file($logo_file)) {
+        $logo_use_image = false;
+    }
+}
+
+$nav_links = [];
+$nav_cta = null;
+foreach ($menu_items as $item) {
+    if ((int) ($item['is_cta'] ?? 0) === 1) {
+        $nav_cta = $item;
+    } else {
+        $nav_links[] = $item;
+    }
+}
+
+$_body_class = trim($body_class ?? '');
+if (basename($_SERVER['PHP_SELF']) !== 'index.php' && stripos($_body_class, 'page-home') === false) {
+    $_body_class = trim($_body_class . ' page-inner');
 }
 ?>
 <!DOCTYPE html>
@@ -67,139 +93,113 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($site_title); ?></title>
-    <meta name="description" content="<?php echo htmlspecialchars($site_description); ?>">
-    <meta name="keywords" content="<?php echo htmlspecialchars($site_keywords); ?>">
-    <meta name="author" content="<?php echo htmlspecialchars($site_name); ?>">
-    
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="http://localhost/unity/">
-    <meta property="og:title" content="<?php echo htmlspecialchars($site_title); ?>">
-    <meta property="og:description" content="<?php echo htmlspecialchars($site_description); ?>">
-    <meta property="og:image" content="http://localhost/unity/images/og-image.jpg">
-
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:title" content="<?php echo htmlspecialchars($site_title); ?>">
-    <meta property="twitter:description" content="<?php echo htmlspecialchars($site_description); ?>">
-
-    <!-- Styles & Fonts -->
-    <link rel="stylesheet" href="css/style.css">
-    
-    <!-- FontAwesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Local Business Schema Markup -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "MedicalBusiness",
-      "name": "<?php echo htmlspecialchars($site_name); ?>",
-      "alternateName": "Unity Diagnostics",
-      "image": "http://localhost/unity/images/logo.png",
-      "logo": "http://localhost/unity/images/logo.png",
-      "@id": "http://localhost/unity/#laboratory",
-      "url": "http://localhost/unity/",
-      "telephone": "<?php echo htmlspecialchars($support_phone); ?>",
-      "email": "<?php echo htmlspecialchars($support_email); ?>",
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "102 Health Plaza, Sector 15",
-        "addressLocality": "Gurugram",
-        "addressRegion": "Haryana",
-        "postalCode": "122001",
-        "addressCountry": "IN"
-      },
-      "geo": {
-        "@type": "GeoCoordinates",
-        "latitude": 28.459497,
-        "longitude": 77.026638
-      },
-      "openingHoursSpecification": [
-        {
-          "@type": "OpeningHoursSpecification",
-          "dayOfWeek": [
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday"
-          ],
-          "opens": "07:00",
-          "closes": "21:00"
-        },
-        {
-          "@type": "OpeningHoursSpecification",
-          "dayOfWeek": "Sunday",
-          "opens": "07:00",
-          "closes": "14:00"
-        }
-      ],
-      "sameAs": [
-        "https://www.facebook.com/unityclinicallab",
-        "https://www.instagram.com/unityclinicallab"
-      ],
-      "priceRange": "$$"
-    }
+    <meta name="csrf-token" content="<?php echo htmlspecialchars(csrfToken()); ?>">
+    <?php renderMarketingHead($cms, $page_meta); ?>
+    <script>
+    (function(){try{var t=localStorage.getItem('unity-theme');if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');}}catch(e){}})();
     </script>
-</head>
-<body>
 
-    <!-- Top Announcement Banner -->
-    <?php if (($cms['top_offer_active'] ?? '0') === '1' && !empty($cms['top_offer_text'])): ?>
-    <div class="offer-banner" style="background-color: var(--brand-teal); color: #ffffff; text-align: center; padding: 10px 15px; font-weight: 600; font-size: 0.9rem; z-index: 1000; position: relative; border-bottom: 1px solid rgba(255,255,255,0.1);">
-        <div class="container" style="display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <span><i class="fa-solid fa-bullhorn"></i> <?php echo htmlspecialchars($cms['top_offer_text']); ?></span>
-            <a href="packages.php" style="background: #ffffff; color: var(--brand-blue); padding: 2px 10px; border-radius: 20px; font-size: 0.75rem; text-decoration: none; font-weight: 700; text-transform: uppercase;">View Offers</a>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/premium.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="<?php echo htmlspecialchars($_body_class); ?>">
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <?php renderTrackingScripts($cms, 'body'); ?>
+
+    <?php if (($cms['top_offer_active'] ?? '0') === '1' && cmsSetting($cms, 'top_offer_text') !== ''): ?>
+    <div class="offer-banner">
+        <div class="container offer-banner-inner">
+            <span class="offer-banner-text"><i class="fa-solid fa-bullhorn"></i> <?php echo htmlspecialchars($cms['top_offer_text']); ?></span>
+            <?php if ($offer_link !== ''): ?>
+            <a href="<?php echo htmlspecialchars($offer_link); ?>" class="offer-banner-cta"><?php echo htmlspecialchars($offer_link_text); ?></a>
+            <?php endif; ?>
         </div>
     </div>
     <?php endif; ?>
 
-    <!-- Top Info Bar -->
+    <?php if (($cms['header_show_top_bar'] ?? '1') === '1'): ?>
     <div class="top-bar">
         <div class="container">
             <div class="top-bar-info">
+                <?php if (($cms['header_show_phone'] ?? '1') === '1' && $support_phone !== ''): ?>
                 <span><i class="fa-solid fa-phone"></i> <?php echo htmlspecialchars($support_phone); ?></span>
+                <?php endif; ?>
+                <?php if (($cms['header_show_email'] ?? '1') === '1' && $support_email !== ''): ?>
                 <span><i class="fa-solid fa-envelope"></i> <?php echo htmlspecialchars($support_email); ?></span>
-                <span><i class="fa-solid fa-location-dot"></i> Gurugram, India</span>
+                <?php endif; ?>
+                <?php if (($cms['header_show_location'] ?? '1') === '1' && $top_bar_location !== ''): ?>
+                <span><i class="fa-solid fa-location-dot"></i> <?php echo htmlspecialchars($top_bar_location); ?></span>
+                <?php endif; ?>
             </div>
+            <?php if (($cms['header_show_social'] ?? '1') === '1'): ?>
             <div class="top-bar-social">
-                <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-                <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $whatsapp_num); ?>" target="_blank" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                <?php foreach ($social_links as $social): ?>
+                    <a href="<?php echo htmlspecialchars($social['url']); ?>" target="_blank" rel="noopener noreferrer" aria-label="<?php echo htmlspecialchars($social['label']); ?>"><i class="<?php echo htmlspecialchars($social['icon']); ?>"></i></a>
+                <?php endforeach; ?>
+                <?php if (($cms['header_show_whatsapp_icon'] ?? '1') === '1' && $whatsapp_num !== ''): ?>
+                <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $whatsapp_num); ?>" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                <?php endif; ?>
             </div>
+            <?php endif; ?>
         </div>
     </div>
+    <?php endif; ?>
 
-    <!-- Main Navigation Bar -->
-    <header class="site-header">
+    <header class="site-header" style="<?php echo htmlspecialchars($header_logo_style); ?>">
         <div class="container">
-            <nav class="nav-bar">
-                <a href="index.php" class="logo-link">
-                    <?php if (($cms['logo_type'] ?? 'text') === 'image' && !empty($cms['logo_image'])): ?>
-                        <img src="<?php echo htmlspecialchars($cms['logo_image']); ?>" alt="<?php echo htmlspecialchars($site_name); ?>" class="brand-logo-img" style="max-height: 45px; object-fit: contain;">
+            <nav class="nav-bar" aria-label="Main navigation">
+                <a href="<?php echo htmlspecialchars($header_logo_url); ?>" class="logo-link<?php echo $logo_use_image ? ' logo-link--image' : ''; ?>">
+                    <?php if ($logo_use_image): ?>
+                        <img src="<?php echo htmlspecialchars($logo_image); ?>" alt="<?php echo htmlspecialchars($site_name); ?>" class="brand-logo-img" width="<?php echo $header_logo_display_w; ?>" height="<?php echo $header_logo_display_h; ?>">
                     <?php elseif (($cms['logo_type'] ?? 'text') === 'icon'): ?>
-                        <div class="logo-icon"><i class="<?php echo htmlspecialchars($cms['logo_icon'] ?? 'fa-solid fa-flask'); ?>"></i></div>
-                        <div class="logo-text"><?php echo htmlspecialchars($logo_main); ?><span><?php echo htmlspecialchars($logo_span); ?></span></div>
+                        <div class="logo-icon"><i class="<?php echo htmlspecialchars($logo_icon); ?>"></i></div>
+                        <div class="logo-text">
+                            <span class="logo-text-line"><?php echo htmlspecialchars($logo_main); ?></span>
+                            <?php if ($logo_span !== ''): ?><span class="logo-text-accent"><?php echo htmlspecialchars($logo_span); ?></span><?php endif; ?>
+                        </div>
                     <?php else: ?>
-                        <div class="logo-icon"><i class="fa-solid fa-flask"></i></div>
-                        <div class="logo-text"><?php echo htmlspecialchars($logo_main); ?><span><?php echo htmlspecialchars($logo_span); ?></span></div>
+                        <div class="logo-icon"><i class="<?php echo htmlspecialchars($logo_icon); ?>"></i></div>
+                        <div class="logo-text">
+                            <span class="logo-text-line"><?php echo htmlspecialchars($logo_main); ?></span>
+                            <?php if ($logo_span !== ''): ?><span class="logo-text-accent"><?php echo htmlspecialchars($logo_span); ?></span><?php endif; ?>
+                        </div>
                     <?php endif; ?>
                 </a>
-                
-                <button class="menu-toggle" aria-label="Toggle menu">☰</button>
-                
-                <ul class="nav-menu">
-                    <?php foreach ($menu_items as $item): ?>
-                        <li class="nav-item <?php echo is_item_active($item['url'], $active_nav ?? ''); ?>">
-                            <a href="<?php echo htmlspecialchars($item['url']); ?>" class="<?php echo ((int)$item['is_cta'] === 1) ? 'nav-cta' : ''; ?>">
-                                <?php echo htmlspecialchars($item['title']); ?>
-                            </a>
-                        </li>
-                    <?php endforeach; ?>
-                </ul>
+
+                <div class="nav-bar-center">
+                    <ul class="nav-menu" id="navMenu">
+                        <?php foreach ($nav_links as $item): ?>
+                            <li class="nav-item <?php echo is_item_active($item['url'], $active_nav ?? ''); ?>">
+                                <a href="<?php echo htmlspecialchars($item['url']); ?>"><?php echo htmlspecialchars($item['title']); ?></a>
+                            </li>
+                        <?php endforeach; ?>
+                        <?php if ($nav_cta): ?>
+                            <li class="nav-item nav-item-cta-mobile">
+                                <a href="<?php echo htmlspecialchars($nav_cta['url']); ?>" class="btn btn-primary nav-cta-mobile"><?php echo htmlspecialchars($nav_cta['title']); ?></a>
+                            </li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+
+                <div class="nav-bar-actions">
+                    <?php if ($nav_cta): ?>
+                    <a href="<?php echo htmlspecialchars($nav_cta['url']); ?>" class="btn btn-primary nav-header-cta"><?php echo htmlspecialchars($nav_cta['title']); ?></a>
+                    <?php endif; ?>
+                    <button type="button" class="theme-toggle" aria-label="Toggle dark mode" title="Toggle theme">
+                        <i class="fa-solid fa-moon theme-icon-dark"></i>
+                        <i class="fa-solid fa-sun theme-icon-light"></i>
+                    </button>
+                    <button class="menu-toggle" aria-label="<?php echo htmlspecialchars($menu_toggle_label); ?>" aria-expanded="false">☰</button>
+                </div>
             </nav>
         </div>
     </header>
+
+    <?php if (($cms['floating_whatsapp_enabled'] ?? '0') === '1' && $whatsapp_num !== ''): ?>
+    <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $whatsapp_num); ?>" class="floating-whatsapp" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp">
+        <i class="fa-brands fa-whatsapp"></i>
+    </a>
+    <?php endif; ?>
+
+    <main id="main-content">

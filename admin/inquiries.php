@@ -7,6 +7,7 @@ $msg = '';
 
 // Handle Status Updates
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
+    requireCsrf();
     $inq_id = (int)$_POST['inq_id'];
     $status = trim($_POST['status']);
     
@@ -143,6 +144,7 @@ $inquiries = $db->query("SELECT * FROM inquiries ORDER BY id DESC")->fetchAll();
                                             
                                             <!-- Status Toggle Form -->
                                             <form action="inquiries.php" method="POST" style="margin-top: 4px;">
+                                                <?php echo csrfField(); ?>
                                                 <input type="hidden" name="inq_id" value="<?php echo $inq['id']; ?>">
                                                 <select name="status" onchange="this.form.submit()" class="form-control" style="font-size: 0.8rem; padding: 4px 8px; height: auto;">
                                                     <option value="">-- Mark --</option>

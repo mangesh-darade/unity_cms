@@ -7,6 +7,7 @@ $msg = '';
 
 // Handle Patient Registration
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_patient'])) {
+    requireCsrf();
     $name = trim($_POST['name']);
     $mobile = trim($_POST['mobile']);
     $email = trim($_POST['email']);
@@ -158,6 +159,7 @@ $patients = $db->query("SELECT * FROM patients ORDER BY id DESC")->fetchAll();
                 </div>
                 
                 <form action="patients.php" method="POST">
+                    <?php echo csrfField(); ?>
                     <div class="form-group">
                         <label for="name" class="form-label">Full Name <span style="color: #ef4444;">*</span></label>
                         <input type="text" id="name" name="name" class="form-control" placeholder="Enter patient name" required>

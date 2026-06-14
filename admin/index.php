@@ -13,6 +13,10 @@ if (isset($_GET['logout']) && $_GET['logout'] === '1') {
 // 2. Handle Login Submit
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_submit'])) {
+    requireCsrf();
+    if (!rateLimit('admin_login', 5, 900)) {
+        $error = 'Too many login attempts. Please wait 15 minutes and try again.';
+    } else {
     $username = trim($_POST['username']);
     $password = trim($_POST['password']);
     
@@ -23,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_submit'])) {
             $user = $stmt->fetch();
             
             if ($user && password_verify($password, $user['password'])) {
+                session_regenerate_id(true);
                 $_SESSION['admin_logged_in'] = true;
                 $_SESSION['admin_username'] = $user['username'];
                 header("Location: index.php");
@@ -31,10 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['login_submit'])) {
                 $error = 'Invalid username or password.';
             }
         } catch (PDOException $e) {
-            $error = 'Database error: ' . $e->getMessage();
+            $error = APP_DEBUG ? 'Database error: ' . $e->getMessage() : 'Unable to sign in right now. Please try again.';
         }
     } else {
         $error = 'Please fill in all fields.';
+    }
     }
 }
 
@@ -65,6 +71,7 @@ if (!isAdminLoggedIn()) {
             <?php endif; ?>
             
             <form action="index.php" method="POST">
+                <?php echo csrfField(); ?>
                 <div class="form-group">
                     <label for="username" class="form-label">Username</label>
                     <input type="text" id="username" name="username" class="form-control" placeholder="Enter username" required autofocus>
@@ -89,6 +96,10 @@ exit();
 }
 
 // 4. Render Admin Dashboard Dashboard if logged in
+$password_warning = ($cms['admin_password_changed'] ?? '0') !== '1'
+    ? '<div class="alert alert-error" style="margin-bottom: 20px;"><i class="fa-solid fa-triangle-exclamation"></i> <strong>Security:</strong> Please change the default admin password in <a href="settings.php" style="color: inherit; font-weight: 700;">Settings</a> before going live.</div>'
+    : '';
+
 // Fetch count parameters
 $total_bookings = $db->query("SELECT COUNT(*) FROM bookings")->fetchColumn();
 $pending_bookings = $db->query("SELECT COUNT(*) FROM bookings WHERE status = 'Pending'")->fetchColumn();
@@ -147,6 +158,8 @@ $recent_inquiries = $db->query("SELECT * FROM inquiries ORDER BY id DESC LIMIT 5
                 <a href="index.php?logout=1" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.85rem; border-radius: 4px;"><i class="fa-solid fa-power-off"></i> Logout</a>
             </div>
         </div>
+
+        <?php echo $password_warning; ?>
 
         <!-- Metric Counter Grid -->
         <div class="stats-grid">

@@ -6,6 +6,7 @@ requireAdmin();
 // Handle Status Updates
 $msg = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
+    requireCsrf();
     $booking_id = (int)$_POST['booking_id'];
     $status = trim($_POST['status']);
     
@@ -135,6 +136,7 @@ $bookings = $db->query("SELECT * FROM bookings ORDER BY id DESC")->fetchAll();
                                             
                                             <!-- Status Update Form Toggle -->
                                             <form action="bookings.php" method="POST" style="margin-top: 4px;">
+                                                <?php echo csrfField(); ?>
                                                 <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
                                                 <select name="status" onchange="this.form.submit()" class="form-control" style="font-size: 0.8rem; padding: 4px 8px; height: auto;">
                                                     <option value="">-- Update --</option>

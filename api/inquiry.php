@@ -1,11 +1,21 @@
 <?php
 header('Content-Type: application/json');
-include '../includes/db.php';
+require_once '../includes/db.php';
+require_once '../includes/security.php';
+require_once '../includes/captcha.php';
+require_once '../includes/notifications.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'Method not allowed.']);
     exit();
+}
+
+requireCsrf();
+rateLimitOrFail('inquiry', 8, 900, 'Too many inquiry submissions. Please wait before trying again.');
+
+if (!validateCaptcha($_POST['captcha_answer'] ?? null, $cms)) {
+    captchaErrorResponse();
 }
 
 $name = isset($_POST['name']) ? trim($_POST['name']) : '';
@@ -14,7 +24,6 @@ $email = isset($_POST['email']) ? trim($_POST['email']) : '';
 $subject = isset($_POST['subject']) ? trim($_POST['subject']) : '';
 $message = isset($_POST['message']) ? trim($_POST['message']) : '';
 
-// Validation
 if (empty($name) || empty($mobile) || empty($email) || empty($subject) || empty($message)) {
     echo json_encode(['success' => false, 'message' => 'Please fill in all required fields.']);
     exit();
@@ -33,14 +42,21 @@ if (!preg_match('/^[0-9]{10}$/', $mobile)) {
 try {
     $stmt = $db->prepare("INSERT INTO inquiries (name, mobile, email, subject, message, status) VALUES (:name, :mobile, :email, :subject, :message, 'New')");
     $result = $stmt->execute([
-        ':name' => htmlspecialchars($name),
-        ':mobile' => htmlspecialchars($mobile),
-        ':email' => htmlspecialchars($email),
-        ':subject' => htmlspecialchars($subject),
-        ':message' => htmlspecialchars($message)
+        ':name' => $name,
+        ':mobile' => $mobile,
+        ':email' => $email,
+        ':subject' => $subject,
+        ':message' => $message
     ]);
 
     if ($result) {
+        notifyAdminInquiry($db, $cms, [
+            'name' => $name,
+            'mobile' => $mobile,
+            'email' => $email,
+            'subject' => $subject,
+            'message' => $message,
+        ]);
         echo json_encode([
             'success' => true,
             'message' => 'Your inquiry has been submitted successfully! Our helpdesk will contact you shortly.'
@@ -49,6 +65,5 @@ try {
         echo json_encode(['success' => false, 'message' => 'Failed to save your inquiry. Please try again.']);
     }
 } catch (PDOException $e) {
-    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => appErrorMessage($e)]);
 }
-?>
