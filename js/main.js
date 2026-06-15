@@ -16,28 +16,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Dynamic header offset for mobile menu
+    function updateHeaderOffset() {
+        const header = document.querySelector('.site-header');
+        const offer = document.querySelector('.offer-banner');
+        const topBar = document.querySelector('.top-bar');
+        const menuOpen = document.body.classList.contains('menu-open');
+        let offset = 0;
+        if (offer && !menuOpen) offset += offer.offsetHeight;
+        if (topBar && !menuOpen) offset += topBar.offsetHeight;
+        if (header) offset += header.offsetHeight;
+        document.documentElement.style.setProperty('--header-offset', `${offset}px`);
+    }
+
     // 1. Mobile Menu Toggle
     const menuToggle = document.querySelector('.menu-toggle');
     const navMenu = document.querySelector('.nav-menu');
+    const navBackdrop = document.getElementById('navBackdrop');
     const siteHeader = document.querySelector('.site-header');
     
     if (menuToggle && navMenu) {
         const setMenuOpen = (open) => {
             navMenu.classList.toggle('active', open);
+            navBackdrop?.classList.toggle('is-visible', open);
+            navBackdrop?.setAttribute('aria-hidden', open ? 'false' : 'true');
             menuToggle.innerHTML = open ? '✕' : '☰';
             menuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
             document.body.classList.toggle('menu-open', open);
+            requestAnimationFrame(updateHeaderOffset);
         };
 
-        menuToggle.addEventListener('click', () => {
+        menuToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
             setMenuOpen(!navMenu.classList.contains('active'));
         });
 
-        document.addEventListener('click', (e) => {
-            if (!navMenu.contains(e.target) && !menuToggle.contains(e.target)) {
-                setMenuOpen(false);
-            }
-        });
+        navBackdrop?.addEventListener('click', () => setMenuOpen(false));
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && navMenu.classList.contains('active')) {
@@ -50,17 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Dynamic header offset for mobile menu
-    const updateHeaderOffset = () => {
-        const header = document.querySelector('.site-header');
-        const offer = document.querySelector('.offer-banner');
-        const topBar = document.querySelector('.top-bar');
-        let offset = 0;
-        if (offer) offset += offer.offsetHeight;
-        if (topBar) offset += topBar.offsetHeight;
-        if (header) offset += header.offsetHeight;
-        document.documentElement.style.setProperty('--header-offset', `${offset}px`);
-    };
     updateHeaderOffset();
     window.addEventListener('resize', updateHeaderOffset, { passive: true });
 

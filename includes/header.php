@@ -164,30 +164,30 @@ if (basename($_SERVER['PHP_SELF']) !== 'index.php' && stripos($_body_class, 'pag
                     <?php endif; ?>
                 </a>
 
-                <div class="nav-bar-center">
-                    <ul class="nav-menu" id="navMenu">
-                        <?php foreach ($nav_links as $item): ?>
-                            <li class="nav-item <?php echo is_item_active($item['url'], $active_nav ?? ''); ?>">
-                                <a href="<?php echo htmlspecialchars($item['url']); ?>"><?php echo htmlspecialchars($item['title']); ?></a>
-                            </li>
-                        <?php endforeach; ?>
-                        <?php if ($nav_cta): ?>
-                            <li class="nav-item nav-item-cta-mobile">
-                                <a href="<?php echo htmlspecialchars($nav_cta['url']); ?>" class="btn btn-primary nav-cta-mobile"><?php echo htmlspecialchars($nav_cta['title']); ?></a>
-                            </li>
-                        <?php endif; ?>
-                    </ul>
-                </div>
+                <ul class="nav-menu" id="navMenu" role="menubar">
+                    <?php foreach ($nav_links as $item): ?>
+                        <li class="nav-item <?php echo is_item_active($item['url'], $active_nav ?? ''); ?>" role="none">
+                            <a href="<?php echo htmlspecialchars($item['url']); ?>" role="menuitem"><?php echo htmlspecialchars($item['title']); ?></a>
+                        </li>
+                    <?php endforeach; ?>
+                    <?php if ($nav_cta): ?>
+                        <li class="nav-item nav-item-cta-mobile" role="none">
+                            <a href="<?php echo htmlspecialchars($nav_cta['url']); ?>" class="btn btn-primary nav-cta-mobile" role="menuitem"><?php echo htmlspecialchars($nav_cta['title']); ?></a>
+                        </li>
+                    <?php endif; ?>
+                </ul>
 
                 <div class="nav-bar-actions">
                     <?php if ($nav_cta): ?>
                     <a href="<?php echo htmlspecialchars($nav_cta['url']); ?>" class="btn btn-primary nav-header-cta"><?php echo htmlspecialchars($nav_cta['title']); ?></a>
                     <?php endif; ?>
-                    <button class="menu-toggle" aria-label="<?php echo htmlspecialchars($menu_toggle_label); ?>" aria-expanded="false">☰</button>
+                    <button type="button" class="menu-toggle" aria-label="<?php echo htmlspecialchars($menu_toggle_label); ?>" aria-expanded="false" aria-controls="navMenu">☰</button>
                 </div>
             </nav>
         </div>
     </header>
+
+    <div class="nav-backdrop" id="navBackdrop" aria-hidden="true"></div>
 
     <?php if (($cms['floating_whatsapp_enabled'] ?? '0') === '1' && $whatsapp_num !== ''): ?>
     <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $whatsapp_num); ?>" class="floating-whatsapp" target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp">
