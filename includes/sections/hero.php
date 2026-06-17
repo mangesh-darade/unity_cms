@@ -1,7 +1,14 @@
 <!-- Hero Section — Premium -->
+<?php
+$heroBg = $cms['hero_bg_image'] ?? 'images/gallery/web/blood-collection.jpg';
+$heroBgFile = dirname(__DIR__, 2) . '/' . ltrim($heroBg, '/');
+if (is_file($heroBgFile)) {
+    $heroBg .= '?v=' . filemtime($heroBgFile);
+}
+?>
 <section class="hero-section hero-premium">
     <div class="hero-bg" aria-hidden="true">
-        <div class="hero-bg-image" style="background-image: url('<?php echo htmlspecialchars($cms['hero_bg_image'] ?? 'images/gallery/web/blood-collection.jpg'); ?>');"></div>
+        <div class="hero-bg-image" style="background-image: url('<?php echo htmlspecialchars($heroBg); ?>');"></div>
         <div class="hero-bg-gradient"></div>
         <div class="hero-orb hero-orb-1"></div>
         <div class="hero-orb hero-orb-2"></div>
