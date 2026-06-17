@@ -34,6 +34,7 @@ function is_item_active($item_url, $active_nav) {
     if ($active_nav === 'contact' && $item_url === 'contact.php') return 'active';
     if ($active_nav === 'download' && $item_url === 'download.php') return 'active';
     if ($active_nav === 'collection' && $item_url === 'collection.php') return 'active';
+    if ($active_nav === 'locations' && in_array($item_url, ['locations.php', 'location.php'], true)) return 'active';
     return '';
 }
 
@@ -97,7 +98,7 @@ if (basename($_SERVER['PHP_SELF']) !== 'index.php' && stripos($_body_class, 'pag
     <?php renderMarketingHead($cms, $page_meta); ?>
 
     <link rel="stylesheet" href="css/style.css">
-    <link rel="stylesheet" href="css/premium.css">
+    <link rel="stylesheet" href="css/premium.css?v=<?php echo @filemtime(__DIR__ . '/../css/premium.css') ?: '1'; ?>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="<?php echo htmlspecialchars($_body_class); ?>">

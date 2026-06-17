@@ -85,6 +85,11 @@
                                 <div class="form-group"><label class="form-label">Google Search Console Verification</label><input type="text" name="google_site_verification" class="form-control" value="<?php echo htmlspecialchars($cms['google_site_verification'] ?? ''); ?>"></div>
                             </div>
                             <div class="form-group"><label class="form-label">Bing Webmaster Verification</label><input type="text" name="bing_site_verification" class="form-control" value="<?php echo htmlspecialchars($cms['bing_site_verification'] ?? ''); ?>"></div>
+                            <p style="font-size:0.85rem; color:#64748b; margin-top:8px;">
+                                <i class="fa-solid fa-chart-pie"></i>
+                                View <strong>realtime</strong> GA4 visitor data in admin: <a href="analytics.php"><strong>Admin → GA4 Analytics</strong></a>
+                                (auto-refreshes every 30 seconds; requires Property ID + service account JSON on that page).
+                            </p>
 
                             <h3 style="font-size:1.05rem; color:var(--primary); margin:24px 0 12px;"><i class="fa-solid fa-map-location-dot"></i> Local Business Schema (JSON-LD)</h3>
                             <div class="admin-form-row">
@@ -111,6 +116,15 @@
                             <div class="admin-form-row">
                                 <div class="form-group"><label class="form-label">Sunday Opens</label><input type="text" name="schema_opens_sunday" class="form-control" value="<?php echo htmlspecialchars($cms['schema_opens_sunday'] ?? '07:00'); ?>"></div>
                                 <div class="form-group"><label class="form-label">Sunday Closes</label><input type="text" name="schema_closes_sunday" class="form-control" value="<?php echo htmlspecialchars($cms['schema_closes_sunday'] ?? '14:00'); ?>"></div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Google Maps Embed URL</label>
+                                <input type="url" name="maps_embed_url" class="form-control" value="<?php echo htmlspecialchars($cms['maps_embed_url'] ?? ''); ?>" placeholder="https://www.google.com/maps/embed?pb=...">
+                                <small style="color:#64748b;">Also editable in <a href="cms.php#tab-general">General Settings → Google Maps</a> with directions link &amp; lat/lng.</small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Geo Region Code</label>
+                                <input type="text" name="geo_region_code" class="form-control" value="<?php echo htmlspecialchars($cms['geo_region_code'] ?? 'IN-MH'); ?>" placeholder="IN-MH">
                             </div>
 
                             <h3 style="font-size:1.05rem; color:var(--primary); margin:24px 0 12px;"><i class="fa-solid fa-rocket"></i> Conversion &amp; CTA</h3>
@@ -151,7 +165,8 @@
                                 <textarea name="marketing_body_scripts" class="form-control" rows="4"><?php echo htmlspecialchars($cms['marketing_body_scripts'] ?? ''); ?></textarea>
                             </div>
 
-                            <p style="font-size:0.85rem; color:#64748b; margin-top:12px;">Sitemap: <a href="../sitemap.php" target="_blank"><?php echo htmlspecialchars(rtrim(BASE_URL, '/') . '/sitemap.php'); ?></a> · Per-page sitemap settings are under <a href="cms.php#tab-pages">Site Pages</a>.</p>
+                            <p style="font-size:0.85rem; color:#64748b; margin-top:12px;">Sitemap: <a href="../sitemap.php" target="_blank"><?php echo htmlspecialchars(rtrim(BASE_URL, '/') . '/sitemap.php'); ?></a> · RSS: <a href="../feed.php" target="_blank">feed.php</a> · Locations: <a href="../locations.php" target="_blank">locations.php</a> · Per-page SEO under <a href="cms.php#tab-pages">Site Pages</a>.</p>
+                            <p style="font-size:0.85rem; color:#64748b;">Tip: Use <strong>GTM OR direct GA4</strong> — if both are set, only GTM loads GA to avoid duplicate tracking. Add conversion tags in GTM for booking_submit, inquiry_submit, review_submit events.</p>
 
                             <button type="submit" name="update_marketing" class="btn btn-teal w-full" style="margin-top: 20px;">
                                 <i class="fa-solid fa-bullhorn"></i> Save Digital Marketing Settings

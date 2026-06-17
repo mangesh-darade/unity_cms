@@ -122,6 +122,7 @@ $reports = $db->query("
 
 // Fetch patients list for selector dropdown
 $patients_list = $db->query("SELECT patient_id, name FROM patients ORDER BY name ASC")->fetchAll();
+$admin_nav = 'reports';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -135,28 +136,7 @@ $patients_list = $db->query("SELECT patient_id, name FROM patients ORDER BY name
 </head>
 <body class="admin-body">
 
-    <!-- Admin Sidebar -->
-    <div class="admin-sidebar">
-        <div class="admin-sidebar-header">
-            <div class="logo-icon" style="width: 32px; height: 32px; font-size: 1.1rem;"><i class="fa-solid fa-flask"></i></div>
-            <span style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: #ffffff;">Unity Lab Admin</span>
-        </div>
-        
-        <ul class="admin-menu">
-            <li class="admin-menu-item"><a href="index.php"><i class="fa-solid fa-chart-line"></i> <span>Dashboard</span></a></li>
-            <li class="admin-menu-item"><a href="bookings.php"><i class="fa-solid fa-calendar-check"></i> <span>Bookings</span></a></li>
-            <li class="admin-menu-item"><a href="patients.php"><i class="fa-solid fa-users"></i> <span>Patients</span></a></li>
-            <li class="admin-menu-item active"><a href="reports.php"><i class="fa-solid fa-file-pdf"></i> <span>Upload Reports</span></a></li>
-            <li class="admin-menu-item"><a href="inquiries.php"><i class="fa-solid fa-envelope-open-text"></i> <span>Inquiries</span></a></li>
-            <li class="admin-menu-item"><a href="cms.php"><i class="fa-solid fa-file-pen"></i> <span>CMS Settings</span></a></li>
-            <li class="admin-menu-item"><a href="settings.php"><i class="fa-solid fa-sliders"></i> <span>Settings</span></a></li>
-        </ul>
-        
-        <div class="admin-sidebar-footer">
-            Logged in as:<br>
-            <strong style="color: #ffffff;"><?php echo htmlspecialchars($_SESSION['admin_username']); ?></strong>
-        </div>
-    </div>
+    <?php include __DIR__ . '/includes/sidebar.php'; ?>
 
     <!-- Main Content -->
     <div class="admin-main">

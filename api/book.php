@@ -60,6 +60,13 @@ try {
             'preferred_date' => $preferred_date,
             'address' => $address,
         ]);
+        notifyCustomerBooking($cms, [
+            'name' => $name,
+            'email' => $email,
+            'test_type' => $test_type,
+            'preferred_date' => $preferred_date,
+            'address' => $address,
+        ]);
         echo json_encode([
             'success' => true,
             'message' => 'Booking request registered successfully! Our clinical representative will call you shortly to confirm your slot.'

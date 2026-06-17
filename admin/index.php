@@ -96,6 +96,7 @@ exit();
 }
 
 // 4. Render Admin Dashboard Dashboard if logged in
+$admin_nav = 'dashboard';
 $password_warning = ($cms['admin_password_changed'] ?? '0') !== '1'
     ? '<div class="alert alert-error" style="margin-bottom: 20px;"><i class="fa-solid fa-triangle-exclamation"></i> <strong>Security:</strong> Please change the default admin password in <a href="settings.php" style="color: inherit; font-weight: 700;">Settings</a> before going live.</div>'
     : '';
@@ -109,6 +110,11 @@ $new_inquiries = $db->query("SELECT COUNT(*) FROM inquiries WHERE status = 'New'
 // Fetch recent lists
 $recent_bookings = $db->query("SELECT * FROM bookings ORDER BY id DESC LIMIT 5")->fetchAll();
 $recent_inquiries = $db->query("SELECT * FROM inquiries ORDER BY id DESC LIMIT 5")->fetchAll();
+
+require_once __DIR__ . '/../includes/ga4_analytics.php';
+$ga4PropertyId = trim($cms['ga4_property_id'] ?? '');
+$ga4MeasurementId = trim($cms['google_analytics_id'] ?? '');
+$ga4Connected = $ga4PropertyId !== '' && ga4CredentialsConfigured();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -119,31 +125,17 @@ $recent_inquiries = $db->query("SELECT * FROM inquiries ORDER BY id DESC LIMIT 5
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .ga4-rt-pulse { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); animation: ga4Pulse 1.5s infinite; display: inline-block; }
+        .ga4-rt-badge { background: #dcfce7; color: #15803d; font-size: 0.7rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+        @keyframes ga4Pulse { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); } }
+        .ga4-rt-mini-list { margin: 12px 0 0; padding-left: 18px; color: #475569; font-size: 0.9rem; }
+        .ga4-rt-mini-list li { margin-bottom: 6px; }
+    </style>
 </head>
 <body class="admin-body">
 
-    <!-- Admin Sidebar -->
-    <div class="admin-sidebar">
-        <div class="admin-sidebar-header">
-            <div class="logo-icon" style="width: 32px; height: 32px; font-size: 1.1rem;"><i class="fa-solid fa-flask"></i></div>
-            <span style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: #ffffff;">Unity Lab Admin</span>
-        </div>
-        
-        <ul class="admin-menu">
-            <li class="admin-menu-item active"><a href="index.php"><i class="fa-solid fa-chart-line"></i> <span>Dashboard</span></a></li>
-            <li class="admin-menu-item"><a href="bookings.php"><i class="fa-solid fa-calendar-check"></i> <span>Bookings</span></a></li>
-            <li class="admin-menu-item"><a href="patients.php"><i class="fa-solid fa-users"></i> <span>Patients</span></a></li>
-            <li class="admin-menu-item"><a href="reports.php"><i class="fa-solid fa-file-pdf"></i> <span>Upload Reports</span></a></li>
-            <li class="admin-menu-item"><a href="inquiries.php"><i class="fa-solid fa-envelope-open-text"></i> <span>Inquiries</span></a></li>
-            <li class="admin-menu-item"><a href="cms.php"><i class="fa-solid fa-file-pen"></i> <span>CMS Settings</span></a></li>
-            <li class="admin-menu-item"><a href="settings.php"><i class="fa-solid fa-sliders"></i> <span>Settings</span></a></li>
-        </ul>
-        
-        <div class="admin-sidebar-footer">
-            Logged in as:<br>
-            <strong style="color: #ffffff;"><?php echo htmlspecialchars($_SESSION['admin_username']); ?></strong>
-        </div>
-    </div>
+<?php include __DIR__ . '/includes/sidebar.php'; ?>
 
     <!-- Main Content Area -->
     <div class="admin-main">
@@ -195,6 +187,39 @@ $recent_inquiries = $db->query("SELECT * FROM inquiries ORDER BY id DESC LIMIT 5
                 </div>
                 <div class="stat-icon teal"><i class="fa-solid fa-envelope-open-text"></i></div>
             </div>
+        </div>
+
+        <div class="admin-panel-card" style="margin-top: 30px;" id="ga4-realtime-panel">
+            <div class="admin-card-header">
+                <h2 style="display:flex; align-items:center; gap:10px;">
+                    <span class="ga4-rt-pulse"></span>
+                    Live Website Visitors (GA4 Realtime)
+                </h2>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="ga4-rt-badge" id="ga4-rt-status">LIVE</span>
+                    <a href="analytics.php" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">Full GA4 Dashboard</a>
+                </div>
+            </div>
+            <?php if ($ga4MeasurementId === ''): ?>
+                <p style="color:#64748b; margin:0;">Add your <strong>G-XXXXXXXX</strong> Measurement ID in <a href="cms.php#tab-marketing">CMS → Digital Marketing</a> to start tracking visitors on the public site.</p>
+            <?php elseif (!$ga4Connected): ?>
+                <p style="color:#64748b; margin:0;">Site tracking: <code><?php echo htmlspecialchars($ga4MeasurementId); ?></code>. Connect Property ID + service account on <a href="analytics.php">GA4 Analytics</a> to see <strong>live</strong> visitor counts here.</p>
+            <?php else: ?>
+                <p id="ga4-rt-error" class="alert alert-error" style="display:none; margin-bottom:12px;"></p>
+                <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+                    <div>
+                        <div style="font-size:0.85rem; color:#64748b; text-transform:uppercase; font-weight:600;">Active users right now</div>
+                        <div id="ga4-rt-active-users" style="font-size:2.5rem; font-weight:700; color:#0d9488; line-height:1.1;">—</div>
+                        <div id="ga4-rt-updated" style="font-size:0.8rem; color:#94a3b8; margin-top:4px;">Loading realtime data…</div>
+                    </div>
+                    <div style="flex:1; min-width:220px;">
+                        <div style="font-size:0.85rem; color:#64748b; font-weight:600; margin-bottom:6px;">Pages being viewed</div>
+                        <ul class="ga4-rt-mini-list" id="ga4-rt-mini-pages">
+                            <li style="color:#94a3b8;">Loading…</li>
+                        </ul>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
 
         <div class="grid-2" style="margin-top: 30px;">
@@ -282,6 +307,9 @@ $recent_inquiries = $db->query("SELECT * FROM inquiries ORDER BY id DESC LIMIT 5
         </div>
     </div>
 
+<?php if ($ga4Connected): ?>
+<script src="js/ga4-realtime.js"></script>
+<?php endif; ?>
 </body>
 </html>
 

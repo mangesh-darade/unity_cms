@@ -13,7 +13,7 @@
         <div class="hero-content reveal">
             <span class="hero-tag">
                 <span class="hero-tag-dot"></span>
-                <?php echo htmlspecialchars($cms['hero_tagline'] ?? 'NABL Certified Laboratory & Diagnostic Center'); ?>
+                <?php echo htmlspecialchars($cms['hero_tagline'] ?? 'NABL Aligned Laboratory & Diagnostic Center'); ?>
             </span>
             <h1 class="hero-title"><?php echo nl2br(htmlspecialchars($cms['hero_headline'] ?? 'Accurate Diagnostics. Trusted Results.')); ?></h1>
             <p class="hero-desc"><?php echo htmlspecialchars($cms['hero_subheadline'] ?? 'Advanced Blood, Urine and Health Diagnostic Testing with Fast & Reliable Reports.'); ?></p>

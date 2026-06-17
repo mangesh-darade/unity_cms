@@ -60,4 +60,12 @@ include 'includes/header.php';
     </div>
 </section>
 
-<?php include 'includes/footer.php'; ?>
+<?php
+renderJsonLd(cmsArticleSchema($cms, $post));
+renderJsonLd(cmsBreadcrumbSchema([
+    ['label' => cmsSetting($cms, 'breadcrumb_home_label', 'Home'), 'url' => 'index.php'],
+    ['label' => 'Health Blog', 'url' => 'blog.php'],
+    ['label' => $post['title'], 'url' => ''],
+]));
+
+include 'includes/footer.php';

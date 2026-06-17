@@ -35,6 +35,17 @@ try {
             'lastmod' => date('Y-m-d', strtotime($blog['created_at'])),
         ];
     }
+
+    require_once __DIR__ . '/includes/locations_data.php';
+    $urls[] = ['loc' => 'locations.php', 'changefreq' => 'monthly', 'priority' => '0.85'];
+    foreach (array_keys(cmsLocationAreas()) as $citySlug) {
+        $urls[] = [
+            'loc' => 'location.php?city=' . rawurlencode($citySlug),
+            'changefreq' => 'monthly',
+            'priority' => '0.75',
+        ];
+    }
+    $urls[] = ['loc' => 'feed.php', 'changefreq' => 'weekly', 'priority' => '0.4'];
 } catch (PDOException $e) {
     $urls = [
         ['loc' => 'index.php', 'changefreq' => 'weekly', 'priority' => '1.0'],

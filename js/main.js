@@ -1,6 +1,18 @@
 document.addEventListener('DOMContentLoaded', () => {
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
+    function trackConversion(eventName, params = {}) {
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({ event: eventName, ...params });
+        if (typeof gtag === 'function') {
+            gtag('event', eventName, params);
+        }
+        if (typeof fbq === 'function') {
+            const fbMap = { booking_submit: 'Lead', inquiry_submit: 'Contact', review_submit: 'SubmitApplication' };
+            fbq('track', fbMap[eventName] || 'Lead', params);
+        }
+    }
+
     function apiHeaders() {
         const headers = {};
         if (csrfToken) {
@@ -136,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 
                 if (result.success) {
+                    trackConversion('booking_submit', { form: 'home_collection' });
                     showAlert(bookingForm, 'success', result.message);
                     bookingForm.reset();
                 } else {
@@ -179,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const result = await response.json();
                 
                 if (result.success) {
+                    trackConversion('inquiry_submit', { form: 'contact' });
                     showAlert(inquiryForm, 'success', result.message);
                     inquiryForm.reset();
                 } else {
@@ -186,6 +200,50 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (error) {
                 showAlert(inquiryForm, 'error', 'Network error. Please try again later.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+    }
+
+    // 4b. AJAX Submission: Patient Review Form
+    const reviewForm = document.getElementById('reviewForm');
+    if (reviewForm) {
+        reviewForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = reviewForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = 'Submitting...';
+
+            removeAlerts(reviewForm);
+
+            const formData = new FormData(reviewForm);
+            if (csrfToken) {
+                formData.append('csrf_token', csrfToken);
+            }
+            appendCaptcha(formData, reviewForm);
+
+            try {
+                const response = await fetch('api/review.php', {
+                    method: 'POST',
+                    headers: apiHeaders(),
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    trackConversion('review_submit', { form: 'patient_review' });
+                    showAlert(reviewForm, 'success', result.message);
+                    reviewForm.reset();
+                } else {
+                    showAlert(reviewForm, 'error', result.message || 'Something went wrong. Please try again.');
+                }
+            } catch (error) {
+                showAlert(reviewForm, 'error', 'Network error. Please try again later.');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;

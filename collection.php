@@ -1,6 +1,7 @@
 <?php
 include 'includes/db.php';
 require_once 'includes/captcha.php';
+require_once __DIR__ . '/includes/booking_helpers.php';
 
 $page = cmsPage($cms_pages, 'collection', [
     'meta_title' => 'Schedule Home Sample Collection | Blood Test Home Visit',
@@ -16,25 +17,7 @@ include 'includes/header.php';
 
 $selected_pkg = isset($_GET['package']) ? trim($_GET['package']) : '';
 $selected_tst = isset($_GET['test']) ? trim($_GET['test']) : '';
-
-$preselected = '';
-if ($selected_pkg === 'basic') {
-    $preselected = 'Basic Health Package';
-} elseif ($selected_pkg === 'fullbody') {
-    $preselected = 'Full Body Checkup Package';
-} elseif ($selected_pkg === 'diabetes') {
-    $preselected = 'Diabetes Package';
-} elseif ($selected_pkg === 'senior') {
-    $preselected = 'Senior Citizen Package';
-} elseif ($selected_pkg === 'women') {
-    $preselected = 'Women\'s Health Package';
-} elseif ($selected_tst === 'cbc') {
-    $preselected = 'Blood Routine Test';
-} elseif ($selected_tst === 'thyroid') {
-    $preselected = 'Thyroid Test';
-} elseif ($selected_tst === 'urine') {
-    $preselected = 'Urine Routine Examination';
-}
+$preselected = cmsResolveBookingPrefill($db, $selected_pkg, $selected_tst);
 
 try {
     $dropdown_services = $db->query("SELECT title, price FROM cms_services ORDER BY sequence ASC")->fetchAll();

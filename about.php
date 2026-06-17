@@ -2,14 +2,59 @@
 include 'includes/db.php';
 
 $page = cmsPage($cms_pages, 'about', [
-    'meta_title' => 'About Us | Accreditations & Quality Standards',
-    'meta_description' => 'Unity Clinical Laboratory is an ISO 9001:2015 and NABL aligned diagnostic pathology lab committed to accurate diagnostics, run by certified pathologists.',
+    'meta_title' => 'About Us | Our Team & Laboratory Equipment',
+    'meta_description' => 'Meet Akshay Sanjay Rakh, founder of Unity Clinical Laboratory, consulting doctors Dr. Shubham Shirke & Dr. Akash Trimbake, and our Sysmex, Orbit, Remi & Labomed equipment in Maharashtra.',
 ]);
 $cms_page_context = $page;
 $active_nav = 'about';
 $page_title = $page['meta_title'];
 $meta_description = $page['meta_description'];
 $meta_keywords = $page['meta_keywords'] ?? null;
+
+function cmsTeamImageExists(string $path): bool
+{
+    if ($path === '') {
+        return false;
+    }
+    $full = __DIR__ . '/' . ltrim(str_replace(['\\', '..'], ['/', ''], $path), '/');
+    return is_file($full);
+}
+
+function cmsTeamImageSrc(string $path): string
+{
+    if (!cmsTeamImageExists($path)) {
+        return $path;
+    }
+    $full = __DIR__ . '/' . ltrim($path, '/');
+    return $path . '?v=' . filemtime($full);
+}
+
+function cmsRenderEquipmentSpecs(string $description): void
+{
+    $lines = array_filter(array_map('trim', explode("\n", $description)));
+    if ($lines === []) {
+        return;
+    }
+    $intro = [];
+    $bullets = [];
+    foreach ($lines as $line) {
+        if (str_starts_with($line, '•') || str_starts_with($line, '-')) {
+            $bullets[] = ltrim($line, "•-\t ");
+        } else {
+            $intro[] = $line;
+        }
+    }
+    if (!empty($intro)) {
+        echo '<p class="equipment-intro">' . htmlspecialchars(implode(' ', $intro)) . '</p>';
+    }
+    if (!empty($bullets)) {
+        echo '<ul class="equipment-spec-list">';
+        foreach ($bullets as $bullet) {
+            echo '<li>' . htmlspecialchars($bullet) . '</li>';
+        }
+        echo '</ul>';
+    }
+}
 
 include 'includes/header.php';
 
@@ -21,17 +66,24 @@ $features = cmsPageBlocksByType($blocks, 'feature');
 $team = cmsPageBlocksByType($blocks, 'team');
 $valuesHeader = $headers[0] ?? null;
 $teamHeader = $headers[1] ?? null;
+
+$introImage = $intro['image_path'] ?? 'images/gallery/web/blood-collection.jpg';
+$introIsOwner = cmsTeamImageExists($introImage) && stripos((string) ($intro['title'] ?? ''), 'Akshay') !== false;
+$introImageSrc = cmsTeamImageExists($introImage) ? cmsTeamImageSrc($introImage) : $introImage;
 ?>
 
 <?php renderPageHeader($page, 'About Our Laboratory', 'About Us'); ?>
 
 <section class="section-padding">
     <div class="container">
-        <div class="grid-2 align-center reveal">
+        <div class="grid-2 align-center reveal owner-spotlight-grid">
             <div>
                 <?php if ($intro): ?>
-                    <?php if (!empty($intro['subtitle'])): ?><span class="section-tag"><?php echo htmlspecialchars($intro['subtitle']); ?></span><?php endif; ?>
+                    <span class="section-tag"><?php echo htmlspecialchars($introIsOwner ? 'Founder & Lab Leadership' : ($intro['subtitle'] ?: 'Our Background')); ?></span>
                     <h2 class="section-title" style="text-align:left;margin-top:12px;"><?php echo htmlspecialchars($intro['title']); ?></h2>
+                    <?php if ($introIsOwner && !empty($intro['subtitle'])): ?>
+                        <p class="owner-role"><?php echo htmlspecialchars($intro['subtitle']); ?></p>
+                    <?php endif; ?>
                     <?php foreach (explode("\n\n", (string) $intro['content']) as $para): ?>
                         <?php if (trim($para) !== ''): ?><p class="section-desc" style="text-align:left;margin:16px 0;"><?php echo htmlspecialchars(trim($para)); ?></p><?php endif; ?>
                     <?php endforeach; ?>
@@ -48,8 +100,18 @@ $teamHeader = $headers[1] ?? null;
                 </div>
                 <?php endif; ?>
             </div>
-            <div>
-                <img src="<?php echo htmlspecialchars($intro['image_path'] ?? 'images/gallery/web/blood-collection.jpg'); ?>" alt="Clinical Laboratory Facility" class="about-intro-img">
+            <div class="owner-photo-col">
+                <div class="team-photo-frame owner-photo-frame">
+                    <img src="<?php echo htmlspecialchars($introImageSrc); ?>"
+                         alt="Akshay Sanjay Rakh — Founder &amp; Laboratory In-Charge, Unity Clinical Laboratory"
+                         class="about-intro-img owner-photo-img"
+                         loading="eager"
+                         width="560"
+                         height="700">
+                </div>
+                <?php if ($introIsOwner): ?>
+                <p class="owner-photo-caption"><i class="fa-solid fa-flask"></i> Biochemistry &amp; daily lab operations</p>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -88,16 +150,65 @@ $teamHeader = $headers[1] ?? null;
                 <p class="section-desc max-w-md"><?php echo htmlspecialchars($teamHeader['content']); ?></p>
             <?php endif; ?>
         </div>
-        <div class="grid-3 reveal-stagger">
+        <div class="grid-3 reveal-stagger team-photo-grid team-photo-grid--doctors">
             <?php foreach ($team as $member): ?>
-            <div class="card team-card">
-                <div class="author-avatar team-avatar"><?php echo htmlspecialchars($member['icon'] ?: substr($member['title'], 0, 2)); ?></div>
-                <div>
-                    <h3 style="font-size:1.3rem;margin-bottom:4px;"><?php echo htmlspecialchars($member['title']); ?></h3>
-                    <p style="color:var(--brand-teal);font-weight:600;font-size:0.9rem;margin-bottom:10px;"><?php echo htmlspecialchars($member['subtitle']); ?></p>
-                    <p style="color:var(--text-muted);font-size:0.9rem;line-height:1.6;"><?php echo htmlspecialchars($member['content']); ?></p>
+            <?php
+            $memberImage = (string) ($member['image_path'] ?? '');
+            $hasPhoto = cmsTeamImageExists($memberImage);
+            $memberImageSrc = $hasPhoto ? cmsTeamImageSrc($memberImage) : $memberImage;
+            ?>
+            <article class="card team-card team-card-photo">
+                <?php if ($hasPhoto): ?>
+                <div class="team-photo-frame">
+                    <img src="<?php echo htmlspecialchars($memberImageSrc); ?>"
+                         alt="<?php echo htmlspecialchars($member['title']); ?> — <?php echo htmlspecialchars($member['subtitle'] ?? 'Unity Clinical Laboratory'); ?>"
+                         class="team-photo"
+                         loading="lazy"
+                         width="400"
+                         height="500">
                 </div>
-            </div>
+                <?php else: ?>
+                <div class="author-avatar team-avatar"><?php echo htmlspecialchars($member['icon'] ?: substr($member['title'], 0, 2)); ?></div>
+                <?php endif; ?>
+                <div class="team-card-body">
+                    <h3><?php echo htmlspecialchars($member['title']); ?></h3>
+                    <p class="team-role"><?php echo htmlspecialchars($member['subtitle']); ?></p>
+                    <p class="team-bio"><?php echo htmlspecialchars($member['content']); ?></p>
+                </div>
+            </article>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
+
+<?php
+$equipmentAbout = $db->query('SELECT * FROM cms_equipment ORDER BY sequence ASC')->fetchAll();
+if (!empty($equipmentAbout)):
+?>
+<section class="section-padding section-alt equipment-about-section" id="equipment">
+    <div class="container">
+        <div class="section-header">
+            <span class="section-tag">Clinical Equipment</span>
+            <h2 class="section-title">Precision Instruments Behind Every Report</h2>
+            <p class="section-desc max-w-md">Sysmex hematology, Orbit biochemistry, Remi centrifuge, Labomed microscopy, and classical Leishman staining — maintained and operated under strict quality control.</p>
+        </div>
+        <div class="equipment-grid equipment-grid-detailed reveal-stagger">
+            <?php foreach ($equipmentAbout as $eq): ?>
+            <article class="equipment-card equipment-card-detailed">
+                <div class="equipment-img-wrap">
+                    <img src="<?php echo htmlspecialchars($eq['image_path']); ?>"
+                         alt="<?php echo htmlspecialchars($eq['title']); ?>"
+                         class="equipment-img team-photo-polish"
+                         loading="lazy"
+                         width="480"
+                         height="320">
+                </div>
+                <div class="equipment-body">
+                    <h3><?php echo htmlspecialchars($eq['title']); ?></h3>
+                    <?php cmsRenderEquipmentSpecs((string) ($eq['description'] ?? '')); ?>
+                </div>
+            </article>
             <?php endforeach; ?>
         </div>
     </div>

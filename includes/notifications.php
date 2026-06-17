@@ -62,6 +62,94 @@ function notifyAdminInquiry(PDO $db, array $cms, array $inquiry): void
     sendAppMail($to, $subject, $body, $cms);
 }
 
+function notifyCustomerBooking(array $cms, array $booking): void
+{
+    if (!notificationsEnabled($cms, 'notify_customer_on_booking')) {
+        return;
+    }
+
+    $email = trim($booking['email'] ?? '');
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return;
+    }
+
+    $site = $cms['site_name'] ?? 'Unity Clinical Laboratory';
+    $subject = "[{$site}] Home Collection Booking Received";
+    $body = "Dear {$booking['name']},\n\n"
+        . "Thank you for booking a home sample collection with {$site}.\n\n"
+        . "Booking details:\n"
+        . "Test/Package: {$booking['test_type']}\n"
+        . "Preferred Date: {$booking['preferred_date']}\n"
+        . "Address: {$booking['address']}\n\n"
+        . "Our coordinator will call you within 30 minutes to confirm your slot.\n"
+        . "For urgent queries, call " . ($cms['support_phone'] ?? '') . ".\n\n"
+        . "Regards,\n{$site} Team";
+
+    sendAppMail($email, $subject, $body, $cms);
+}
+
+function notifyAdminReview(PDO $db, array $cms, array $review): void
+{
+    if (!notificationsEnabled($cms, 'notify_on_review')) {
+        return;
+    }
+
+    $to = adminNotifyEmail($cms);
+    if ($to === '') {
+        return;
+    }
+
+    $site = $cms['site_name'] ?? 'Unity Clinical Laboratory';
+    $subject = "[{$site}] New Patient Review (Pending Approval)";
+    $body = "A new patient review was submitted from the website.\n\n"
+        . "Name: {$review['name']}\n"
+        . "Email: {$review['email']}\n"
+        . "Mobile: {$review['mobile']}\n"
+        . "Tag: " . ($review['designation'] ?? 'Patient') . "\n\n"
+        . "Review:\n{$review['review']}\n\n"
+        . 'Approve or manage in admin: ' . BASE_URL . 'admin/cms.php#tab-testimonials';
+
+    sendAppMail($to, $subject, $body, $cms);
+}
+
+function notifyCustomerReviewReceived(array $cms, array $review): void
+{
+    $email = trim($review['email'] ?? '');
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return;
+    }
+
+    $site = $cms['site_name'] ?? 'Unity Clinical Laboratory';
+    $subject = "[{$site}] We Received Your Review";
+    $body = "Dear {$review['name']},\n\n"
+        . "Thank you for sharing your experience with {$site}.\n\n"
+        . "We have received your review and our team will verify it shortly. "
+        . "Once approved, it will appear on our website homepage.\n\n"
+        . "If you have any urgent concerns, please call us at "
+        . ($cms['support_phone'] ?? '') . ".\n\n"
+        . "Regards,\n{$site} Team";
+
+    sendAppMail($email, $subject, $body, $cms);
+}
+
+function notifyPatientReviewApproved(array $cms, array $review): void
+{
+    $email = trim($review['email'] ?? '');
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return;
+    }
+
+    $site = $cms['site_name'] ?? 'Unity Clinical Laboratory';
+    $subject = "[{$site}] Your Review Is Now Live";
+    $body = "Dear {$review['author']},\n\n"
+        . "Good news! Your review has been approved and is now published on our website.\n\n"
+        . "Thank you for trusting {$site}.\n\n"
+        . 'Visit: ' . BASE_URL . "\n\n"
+        . "Regards,\n{$site} Team";
+
+    sendAppMail($email, $subject, $body, $cms);
+}
+
 function notifyPatientReport(PDO $db, array $cms, string $patientId, string $testName): void
 {
     if (!notificationsEnabled($cms, 'notify_on_report')) {

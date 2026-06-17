@@ -43,4 +43,9 @@ try {
     // ignore
 }
 
+$reviewSchema = cmsTestimonialsReviewSchema($db, $cms);
+if ($reviewSchema !== null) {
+    renderJsonLd($reviewSchema);
+}
+
 include 'includes/footer.php';

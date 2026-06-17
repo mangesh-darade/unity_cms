@@ -1,6 +1,7 @@
 <?php
 include '../includes/db.php';
 include '../includes/auth.php';
+require_once __DIR__ . '/../includes/locations_data.php';
 requireAdmin();
 
 $msg = '';
@@ -36,7 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $db->prepare("UPDATE cms_settings SET value = :value WHERE key = :key");
             
             $keys = [
-                'site_name', 'support_address', 'maps_embed_url',
+                'site_name', 'support_address', 'maps_embed_url', 'maps_directions_url',
+                'schema_lat', 'schema_lng',
                 'hero_tagline', 'hero_headline', 'hero_subheadline',
                 'hero_panel_label', 'hero_panel_live', 'hero_panel_help',
                 'hero_stat_1_value', 'hero_stat_1_label',
@@ -47,12 +49,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'hero_float_2_icon', 'hero_float_2_title', 'hero_float_2_desc',
                 'hero_trust_3_text', 'hero_trust_3_icon',
                 'hero_trust_4_text', 'hero_trust_4_icon',
+                'trust_strip_1_icon', 'trust_strip_1_text',
+                'trust_strip_2_icon', 'trust_strip_2_text',
+                'trust_strip_3_icon', 'trust_strip_3_text',
+                'trust_strip_4_icon', 'trust_strip_4_text',
+                'rate_card_image', 'rate_card_cta_text',
             ];
             
             // Check if user uploaded a new hero background image
             $new_hero_bg = handleCMSImageUpload('hero_bg_image_file');
             if (!empty($new_hero_bg)) {
                 $stmt->execute([':key' => 'hero_bg_image', ':value' => $new_hero_bg]);
+            }
+
+            $new_favicon = handleCMSImageUpload('favicon_file');
+            if ($new_favicon !== '') {
+                $stmt->execute([':key' => 'favicon_path', ':value' => $new_favicon]);
+            }
+
+            $new_apple = handleCMSImageUpload('apple_touch_icon_file');
+            if ($new_apple !== '') {
+                $stmt->execute([':key' => 'apple_touch_icon', ':value' => $new_apple]);
+            }
+
+            $new_rate_card = handleCMSImageUpload('rate_card_image_file');
+            if ($new_rate_card !== '') {
+                $stmt->execute([':key' => 'rate_card_image', ':value' => $new_rate_card]);
+            }
+
+            foreach (['trust_strip_enabled', 'rate_card_enabled', 'mobile_sticky_enabled'] as $flag) {
+                $stmt->execute([':key' => $flag, ':value' => isset($_POST[$flag]) ? '1' : '0']);
             }
 
             foreach ($keys as $k) {
@@ -138,9 +164,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $desig = trim($_POST['designation']);
         $seq = (int)$_POST['sequence'];
         if (!empty($text) && !empty($author)) {
-            $stmt = $db->prepare("INSERT INTO cms_testimonials (text, author, designation, sequence) VALUES (?, ?, ?, ?)");
+            $stmt = $db->prepare("INSERT INTO cms_testimonials (text, author, designation, sequence, status, source) VALUES (?, ?, ?, ?, 'approved', 'admin')");
             $stmt->execute([$text, $author, $desig, $seq]);
             $msg = '<div class="alert alert-success">Testimonial card added.</div>';
+        }
+    }
+
+    if (isset($_POST['approve_testimonial'])) {
+        require_once __DIR__ . '/../includes/notifications.php';
+        $id = (int) $_POST['testimonial_id'];
+        $stmt = $db->prepare("UPDATE cms_testimonials SET status = 'approved' WHERE id = ?");
+        $stmt->execute([$id]);
+        $row = $db->prepare('SELECT * FROM cms_testimonials WHERE id = ?');
+        $row->execute([$id]);
+        if ($review = $row->fetch()) {
+            notifyPatientReviewApproved($cms, $review);
+        }
+        $msg = '<div class="alert alert-success">Review approved and published on the website.</div>';
+    }
+
+    if (isset($_POST['reject_testimonial'])) {
+        $id = (int) $_POST['testimonial_id'];
+        $stmt = $db->prepare("UPDATE cms_testimonials SET status = 'rejected' WHERE id = ?");
+        $stmt->execute([$id]);
+        $msg = '<div class="alert alert-success">Review rejected and hidden from the website.</div>';
+    }
+
+    if (isset($_POST['add_location'])) {
+        $name = trim($_POST['name'] ?? '');
+        $slug = cmsSanitizeLocationSlug(trim($_POST['slug'] ?? ''), $name);
+        $headline = trim($_POST['headline'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        if ($name !== '' && $headline !== '' && $description !== '') {
+            try {
+                $stmt = $db->prepare('INSERT INTO cms_locations (slug, name, state, headline, description, keywords, services_text, sequence, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                $stmt->execute([
+                    $slug,
+                    $name,
+                    trim($_POST['state'] ?? 'Maharashtra'),
+                    $headline,
+                    $description,
+                    trim($_POST['keywords'] ?? ''),
+                    trim($_POST['services_text'] ?? ''),
+                    (int) ($_POST['sequence'] ?? 0),
+                    isset($_POST['is_active']) ? 1 : 0,
+                ]);
+                $msg = '<div class="alert alert-success">Service location added successfully!</div>';
+            } catch (PDOException $e) {
+                $msg = '<div class="alert alert-error">Could not add location. Slug may already exist.</div>';
+            }
+        } else {
+            $msg = '<div class="alert alert-error">City name, headline, and description are required.</div>';
+        }
+    }
+
+    if (isset($_POST['update_location'])) {
+        $id = (int) ($_POST['location_id'] ?? 0);
+        $name = trim($_POST['name'] ?? '');
+        $slug = cmsSanitizeLocationSlug(trim($_POST['slug'] ?? ''), $name);
+        if ($id > 0 && $name !== '') {
+            try {
+                $stmt = $db->prepare('UPDATE cms_locations SET slug=?, name=?, state=?, headline=?, description=?, keywords=?, services_text=?, sequence=?, is_active=? WHERE id=?');
+                $stmt->execute([
+                    $slug,
+                    $name,
+                    trim($_POST['state'] ?? 'Maharashtra'),
+                    trim($_POST['headline'] ?? ''),
+                    trim($_POST['description'] ?? ''),
+                    trim($_POST['keywords'] ?? ''),
+                    trim($_POST['services_text'] ?? ''),
+                    (int) ($_POST['sequence'] ?? 0),
+                    isset($_POST['is_active']) ? 1 : 0,
+                    $id,
+                ]);
+                $msg = '<div class="alert alert-success">Service location updated successfully!</div>';
+            } catch (PDOException $e) {
+                $msg = '<div class="alert alert-error">Could not update location. Slug may already be in use.</div>';
+            }
         }
     }
 
@@ -314,6 +414,10 @@ if (isset($_GET['delete_type']) && isset($_GET['id'])) {
             $stmt = $db->prepare("DELETE FROM cms_testimonials WHERE id = ?");
             $stmt->execute([$del_id]);
             $msg = '<div class="alert alert-success">Testimonial removed.</div>';
+        } elseif ($del_type === 'location') {
+            $stmt = $db->prepare('DELETE FROM cms_locations WHERE id = ?');
+            $stmt->execute([$del_id]);
+            $msg = '<div class="alert alert-success">Service location removed.</div>';
         } elseif ($del_type === 'gallery') {
             // Unlink file
             $f_path = $db->query("SELECT image_path FROM cms_gallery WHERE id = $del_id")->fetchColumn();
@@ -385,6 +489,7 @@ $edit_service = cmsFetchEdit($db, 'cms_services', 'edit_service');
 $edit_package = cmsFetchEdit($db, 'cms_packages', 'edit_package');
 $edit_faq = cmsFetchEdit($db, 'cms_faqs', 'edit_faq');
 $edit_testimonial = cmsFetchEdit($db, 'cms_testimonials', 'edit_testimonial');
+$edit_location = cmsFetchEdit($db, 'cms_locations', 'edit_location');
 $edit_blog = cmsFetchEdit($db, 'cms_blogs', 'edit_blog');
 $edit_page = cmsFetchEdit($db, 'cms_pages', 'edit_page');
 $edit_section_item = cmsFetchEdit($db, 'cms_section_items', 'edit_section_item');
@@ -402,11 +507,15 @@ $page_blocks = $page_blocks->fetchAll();
 $services = $db->query("SELECT * FROM cms_services ORDER BY sequence ASC")->fetchAll();
 $packages = $db->query("SELECT * FROM cms_packages ORDER BY sequence ASC")->fetchAll();
 $faqs = $db->query("SELECT * FROM cms_faqs ORDER BY sequence ASC")->fetchAll();
-$testimonials = $db->query("SELECT * FROM cms_testimonials ORDER BY sequence ASC")->fetchAll();
+$testimonials = $db->query("SELECT * FROM cms_testimonials ORDER BY CASE status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END, sequence ASC")->fetchAll();
+$pending_testimonials = array_values(array_filter($testimonials, fn($t) => ($t['status'] ?? 'approved') === 'pending'));
+$published_testimonials = array_values(array_filter($testimonials, fn($t) => in_array($t['status'] ?? 'approved', ['approved', ''], true) || ($t['status'] ?? '') === ''));
+$locations = cmsLocationAreasAll($db);
 $gallery = $db->query("SELECT * FROM cms_gallery ORDER BY sequence ASC")->fetchAll();
 $equipment = $db->query("SELECT * FROM cms_equipment ORDER BY sequence ASC")->fetchAll();
 $blogs = $db->query("SELECT * FROM cms_blogs ORDER BY id DESC")->fetchAll();
 $menu_items_admin = $db->query("SELECT * FROM cms_menu ORDER BY sequence ASC")->fetchAll();
+$admin_nav = 'cms';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -421,28 +530,7 @@ $menu_items_admin = $db->query("SELECT * FROM cms_menu ORDER BY sequence ASC")->
 </head>
 <body class="admin-body">
 
-    <!-- Admin Sidebar -->
-    <div class="admin-sidebar">
-        <div class="admin-sidebar-header">
-            <div class="logo-icon" style="width: 32px; height: 32px; font-size: 1.1rem;"><i class="fa-solid fa-flask"></i></div>
-            <span style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: #ffffff;">Unity Lab Admin</span>
-        </div>
-        
-        <ul class="admin-menu">
-            <li class="admin-menu-item"><a href="index.php"><i class="fa-solid fa-chart-line"></i> <span>Dashboard</span></a></li>
-            <li class="admin-menu-item"><a href="bookings.php"><i class="fa-solid fa-calendar-check"></i> <span>Bookings</span></a></li>
-            <li class="admin-menu-item"><a href="patients.php"><i class="fa-solid fa-users"></i> <span>Patients</span></a></li>
-            <li class="admin-menu-item"><a href="reports.php"><i class="fa-solid fa-file-pdf"></i> <span>Upload Reports</span></a></li>
-            <li class="admin-menu-item"><a href="inquiries.php"><i class="fa-solid fa-envelope-open-text"></i> <span>Inquiries</span></a></li>
-            <li class="admin-menu-item active"><a href="cms.php"><i class="fa-solid fa-file-pen"></i> <span>CMS Settings</span></a></li>
-            <li class="admin-menu-item"><a href="settings.php"><i class="fa-solid fa-sliders"></i> <span>Settings</span></a></li>
-        </ul>
-        
-        <div class="admin-sidebar-footer">
-            Logged in as:<br>
-            <strong style="color: #ffffff;"><?php echo htmlspecialchars($_SESSION['admin_username']); ?></strong>
-        </div>
-    </div>
+    <?php include __DIR__ . '/includes/sidebar.php'; ?>
 
     <!-- Main Content -->
     <div class="admin-main">
@@ -476,6 +564,7 @@ $menu_items_admin = $db->query("SELECT * FROM cms_menu ORDER BY sequence ASC")->
                 <li><button class="cms-tab-btn" data-tab="tab-packages"><i class="fa-solid fa-box-tissue"></i> Health Packages</button></li>
                 <li><button class="cms-tab-btn" data-tab="tab-faqs"><i class="fa-solid fa-circle-question"></i> FAQ Accordion</button></li>
                 <li><button class="cms-tab-btn" data-tab="tab-testimonials"><i class="fa-solid fa-star"></i> Testimonials</button></li>
+                <li><button class="cms-tab-btn" data-tab="tab-locations"><i class="fa-solid fa-map-location-dot"></i> Service Locations</button></li>
                 <li><button class="cms-tab-btn" data-tab="tab-media"><i class="fa-solid fa-images"></i> Gallery & Equipment</button></li>
                 <li><button class="cms-tab-btn" data-tab="tab-blog"><i class="fa-solid fa-pen-nib"></i> health Blog</button></li>
                 <li><button class="cms-tab-btn" data-tab="tab-menu"><i class="fa-solid fa-compass"></i> Navigation Menu</button></li>
@@ -498,14 +587,53 @@ $menu_items_admin = $db->query("SELECT * FROM cms_menu ORDER BY sequence ASC")->
                                     <input type="text" name="site_name" class="form-control" value="<?php echo htmlspecialchars($cms['site_name']); ?>">
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Google Maps Embed URL</label>
-                                    <input type="text" name="maps_embed_url" class="form-control" value="<?php echo htmlspecialchars($cms['maps_embed_url']); ?>">
+                                    <label class="form-label">Favicon (browser tab icon)</label>
+                                    <input type="file" name="favicon_file" class="form-control" accept="image/*" style="padding:8px;">
+                                    <?php if ($fav = cmsSetting($cms, 'favicon_path')): ?>
+                                    <small style="color:#64748b;">Current: <a href="../<?php echo htmlspecialchars($fav); ?>" target="_blank" rel="noopener"><?php echo htmlspecialchars($fav); ?></a></small>
+                                    <?php endif; ?>
                                 </div>
                             </div>
 
                             <div class="form-group">
                                 <label class="form-label">Physical Address</label>
-                                <textarea name="support_address" class="form-control" rows="2"><?php echo htmlspecialchars($cms['support_address']); ?></textarea>
+                                <textarea name="support_address" class="form-control" rows="3" placeholder="Lab name, street, landmark, city, pincode"><?php echo htmlspecialchars($cms['support_address']); ?></textarea>
+                            </div>
+
+                            <h3 style="font-size:1.05rem;color:var(--primary);margin:20px 0 12px;"><i class="fa-solid fa-map-location-dot"></i> Google Maps (exact lab location)</h3>
+                            <p style="font-size:0.85rem;color:#64748b;margin-bottom:12px;">Open Google Maps → find your lab → Share → <strong>Embed a map</strong> (paste iframe <code>src</code> URL below). For directions link, use Share → <strong>Send a link</strong>.</p>
+                            <div class="form-group">
+                                <label class="form-label">Maps Embed URL</label>
+                                <input type="url" name="maps_embed_url" class="form-control" value="<?php echo htmlspecialchars($cms['maps_embed_url'] ?? ''); ?>" placeholder="https://www.google.com/maps/embed?pb=...">
+                                <small style="color:#64748b;">Used on Contact page and homepage contact section.</small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Google Maps Directions URL</label>
+                                <input type="url" name="maps_directions_url" class="form-control" value="<?php echo htmlspecialchars($cms['maps_directions_url'] ?? ''); ?>" placeholder="https://www.google.com/maps/dir/?api=1&destination=...">
+                                <small style="color:#64748b;">Optional “Get Directions” button on Contact page.</small>
+                            </div>
+                            <div class="admin-form-row">
+                                <div class="form-group">
+                                    <label class="form-label">Latitude (schema / geo)</label>
+                                    <input type="text" name="schema_lat" class="form-control" value="<?php echo htmlspecialchars($cms['schema_lat'] ?? ''); ?>" placeholder="18.5204">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Longitude (schema / geo)</label>
+                                    <input type="text" name="schema_lng" class="form-control" value="<?php echo htmlspecialchars($cms['schema_lng'] ?? ''); ?>" placeholder="73.8567">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Apple Touch Icon (optional)</label>
+                                <input type="file" name="apple_touch_icon_file" class="form-control" accept="image/*" style="padding:8px;">
+                                <?php if ($apple = cmsSetting($cms, 'apple_touch_icon')): ?>
+                                <small style="color:#64748b;">Current: <?php echo htmlspecialchars($apple); ?></small>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+                                <input type="checkbox" name="mobile_sticky_enabled" value="1" id="mobile_sticky_enabled" <?php echo ($cms['mobile_sticky_enabled'] ?? '1') === '1' ? 'checked' : ''; ?> style="width:20px;height:20px;">
+                                <label for="mobile_sticky_enabled" style="margin:0;">Show mobile sticky bar (Call / WhatsApp / Book)</label>
                             </div>
 
                             <p style="font-size:0.85rem;color:#64748b;margin:12px 0 20px;padding:12px;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0;">
@@ -570,6 +698,33 @@ $menu_items_admin = $db->query("SELECT * FROM cms_menu ORDER BY sequence ASC")->
                                 <div class="admin-form-row">
                                     <div class="form-group"><label class="form-label">Trust Badge 4 Icon</label><input type="text" name="hero_trust_4_icon" class="form-control" value="<?php echo htmlspecialchars($cms['hero_trust_4_icon'] ?? 'fa-solid fa-house-medical'); ?>"></div>
                                     <div class="form-group"><label class="form-label">Trust Badge 4 Text</label><input type="text" name="hero_trust_4_text" class="form-control" value="<?php echo htmlspecialchars($cms['hero_trust_4_text'] ?? 'Home Collection'); ?>"></div>
+                                </div>
+
+                                <h4 style="font-size:1rem;margin:24px 0 12px;color:var(--primary);">Homepage Trust Strip &amp; Rate Card</h4>
+                                <div class="form-group" style="display:flex;align-items:center;gap:10px;">
+                                    <input type="checkbox" name="trust_strip_enabled" value="1" id="trust_strip_enabled" <?php echo ($cms['trust_strip_enabled'] ?? '1') === '1' ? 'checked' : ''; ?> style="width:20px;height:20px;">
+                                    <label for="trust_strip_enabled" style="margin:0;">Show trust strip below hero (90+ tests, home collection, etc.)</label>
+                                </div>
+                                <?php for ($t = 1; $t <= 4; $t++): ?>
+                                <div class="admin-form-row">
+                                    <div class="form-group"><label class="form-label">Strip Item <?php echo $t; ?> Icon</label><input type="text" name="trust_strip_<?php echo $t; ?>_icon" class="form-control" value="<?php echo htmlspecialchars($cms['trust_strip_' . $t . '_icon'] ?? ''); ?>" placeholder="fa-solid fa-vials"></div>
+                                    <div class="form-group"><label class="form-label">Strip Item <?php echo $t; ?> Text</label><input type="text" name="trust_strip_<?php echo $t; ?>_text" class="form-control" value="<?php echo htmlspecialchars($cms['trust_strip_' . $t . '_text'] ?? ''); ?>"></div>
+                                </div>
+                                <?php endfor; ?>
+                                <div class="form-group" style="display:flex;align-items:center;gap:10px;">
+                                    <input type="checkbox" name="rate_card_enabled" value="1" id="rate_card_enabled" <?php echo ($cms['rate_card_enabled'] ?? '1') === '1' ? 'checked' : ''; ?> style="width:20px;height:20px;">
+                                    <label for="rate_card_enabled" style="margin:0;">Show “View Rate Card” button on trust strip</label>
+                                </div>
+                                <div class="admin-form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Rate Card Image</label>
+                                        <input type="file" name="rate_card_image_file" class="form-control" accept="image/*" style="padding:8px;">
+                                        <input type="text" name="rate_card_image" class="form-control" style="margin-top:8px;" value="<?php echo htmlspecialchars($cms['rate_card_image'] ?? 'images/gallery/web/rate-card.jpg'); ?>" placeholder="images/gallery/web/rate-card.jpg">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Rate Card Button Text</label>
+                                        <input type="text" name="rate_card_cta_text" class="form-control" value="<?php echo htmlspecialchars($cms['rate_card_cta_text'] ?? 'View Rate Card'); ?>">
+                                    </div>
                                 </div>
                             </div>
 
@@ -1408,6 +1563,43 @@ $menu_items_admin = $db->query("SELECT * FROM cms_menu ORDER BY sequence ASC")->
 
                 <!-- Tab 6: Testimonials -->
                 <div id="tab-testimonials" class="cms-tab-content">
+                    <?php if (!empty($pending_testimonials)): ?>
+                    <div class="admin-panel-card" style="border: 2px solid #f59e0b; margin-bottom: 24px;">
+                        <div class="admin-card-header">
+                            <h2>Pending Patient Reviews (<?php echo count($pending_testimonials); ?>)</h2>
+                            <p style="font-size:0.85rem; color:#64748b;">Submitted from the website — approve to publish on the homepage.</p>
+                        </div>
+                        <?php foreach ($pending_testimonials as $tst): ?>
+                            <div class="cms-item-card" style="background:#fffbeb;">
+                                <div class="cms-item-details">
+                                    <p style="font-style:italic; margin-bottom:10px;">"<?php echo htmlspecialchars($tst['text']); ?>"</p>
+                                    <h4>- <?php echo htmlspecialchars($tst['author']); ?> <span style="font-size:0.85rem; color:#64748b; font-weight:400;">(<?php echo htmlspecialchars($tst['designation'] ?? 'Patient'); ?>)</span></h4>
+                                    <p style="font-size:0.85rem; color:#64748b; margin-top:8px;">
+                                        <?php if (!empty($tst['email'])): ?>Email: <?php echo htmlspecialchars($tst['email']); ?> · <?php endif; ?>
+                                        <?php if (!empty($tst['mobile'])): ?>Mobile: <?php echo htmlspecialchars($tst['mobile']); ?> · <?php endif; ?>
+                                        Source: Website
+                                    </p>
+                                </div>
+                                <div class="cms-item-actions" style="display:flex; gap:8px; flex-wrap:wrap;">
+                                    <form action="cms.php#tab-testimonials" method="POST" style="display:inline;">
+                                        <?php echo csrfField(); ?>
+                                        <input type="hidden" name="testimonial_id" value="<?php echo (int) $tst['id']; ?>">
+                                        <button type="submit" name="approve_testimonial" class="btn btn-teal btn-sm"><i class="fa-solid fa-check"></i> Approve</button>
+                                    </form>
+                                    <form action="cms.php#tab-testimonials" method="POST" style="display:inline;">
+                                        <?php echo csrfField(); ?>
+                                        <input type="hidden" name="testimonial_id" value="<?php echo (int) $tst['id']; ?>">
+                                        <button type="submit" name="reject_testimonial" class="btn btn-secondary btn-sm"><i class="fa-solid fa-ban"></i> Reject</button>
+                                    </form>
+                                    <a href="cms.php?edit_testimonial=<?php echo $tst['id']; ?>#tab-testimonials" class="action-btn"><i class="fa-regular fa-pen-to-square"></i> Edit</a>
+                                    <a href="cms.php?delete_type=testimonial&id=<?php echo $tst['id']; ?>" onclick="return confirm('Delete this review?')" class="action-btn btn-action-delete">
+                                        <i class="fa-regular fa-trash-can"></i> Delete
+                                    </a>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php endif; ?>
                     <?php if ($edit_testimonial): ?>
                     <div class="cms-form-box" style="border:2px solid var(--brand-teal);">
                         <h3 style="font-size: 1.2rem; margin-bottom: 15px; color: var(--primary);">Edit Testimonial</h3>
@@ -1440,7 +1632,7 @@ $menu_items_admin = $db->query("SELECT * FROM cms_menu ORDER BY sequence ASC")->
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Designation / Tag</label>
-                                    <input type="text" name="designation" class="form-control" placeholder="e.g. Patient, Gurugram">
+                                    <input type="text" name="designation" class="form-control" placeholder="e.g. Patient, Maharashtra">
                                 </div>
                             </div>
                             <div class="form-group">
@@ -1453,9 +1645,12 @@ $menu_items_admin = $db->query("SELECT * FROM cms_menu ORDER BY sequence ASC")->
 
                     <div class="admin-panel-card">
                         <div class="admin-card-header">
-                            <h2>Current Testimonials</h2>
+                            <h2>Published Testimonials</h2>
                         </div>
-                        <?php foreach ($testimonials as $tst): ?>
+                        <?php if (empty($published_testimonials)): ?>
+                            <p style="color:#64748b; padding: 12px 0;">No published reviews yet.</p>
+                        <?php endif; ?>
+                        <?php foreach ($published_testimonials as $tst): ?>
                             <div class="cms-item-card">
                                 <div class="cms-item-details">
                                     <p style="font-style:italic; margin-bottom:10px;">"<?php echo htmlspecialchars($tst['text']); ?>"</p>
@@ -1464,6 +1659,147 @@ $menu_items_admin = $db->query("SELECT * FROM cms_menu ORDER BY sequence ASC")->
                                 <div class="cms-item-actions">
                                     <a href="cms.php?edit_testimonial=<?php echo $tst['id']; ?>#tab-testimonials" class="action-btn" style="margin-right:8px;"><i class="fa-regular fa-pen-to-square"></i> Edit</a>
                                     <a href="cms.php?delete_type=testimonial&id=<?php echo $tst['id']; ?>" onclick="return confirm('Delete testimonial?')" class="action-btn btn-action-delete">
+                                        <i class="fa-regular fa-trash-can"></i> Delete
+                                    </a>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <!-- Tab: Service Locations (Local SEO) -->
+                <div id="tab-locations" class="cms-tab-content">
+                    <div class="admin-panel-card" style="margin-bottom: 20px;">
+                        <div class="admin-card-header">
+                            <h2>Service Locations</h2>
+                            <p style="font-size:0.85rem; color:#64748b;">Manage city/area pages shown on <a href="../locations.php" target="_blank">locations.php</a> for local SEO and home collection.</p>
+                        </div>
+                    </div>
+
+                    <?php if ($edit_location): ?>
+                    <div class="cms-form-box" style="border:2px solid var(--brand-teal); margin-bottom: 24px;">
+                        <h3 style="font-size: 1.2rem; margin-bottom: 15px; color: var(--primary);">Edit Location — <?php echo htmlspecialchars($edit_location['name']); ?></h3>
+                        <form action="cms.php#tab-locations" method="POST">
+                            <?php echo csrfField(); ?>
+                            <input type="hidden" name="location_id" value="<?php echo (int) $edit_location['id']; ?>">
+                            <div class="admin-form-row">
+                                <div class="form-group">
+                                    <label class="form-label">City / Area Name</label>
+                                    <input type="text" name="name" class="form-control" value="<?php echo htmlspecialchars($edit_location['name']); ?>" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">URL Slug</label>
+                                    <input type="text" name="slug" class="form-control" value="<?php echo htmlspecialchars($edit_location['slug']); ?>" required placeholder="e.g. pune">
+                                    <small style="color:#64748b;">Used in: location.php?city=<strong>slug</strong></small>
+                                </div>
+                            </div>
+                            <div class="admin-form-row">
+                                <div class="form-group">
+                                    <label class="form-label">State</label>
+                                    <input type="text" name="state" class="form-control" value="<?php echo htmlspecialchars($edit_location['state'] ?? 'Maharashtra'); ?>">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Display Sequence</label>
+                                    <input type="number" name="sequence" class="form-control" value="<?php echo (int) $edit_location['sequence']; ?>">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">SEO Headline</label>
+                                <input type="text" name="headline" class="form-control" value="<?php echo htmlspecialchars($edit_location['headline']); ?>" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Description</label>
+                                <textarea name="description" class="form-control" rows="3" required><?php echo htmlspecialchars($edit_location['description']); ?></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">SEO Keywords</label>
+                                <input type="text" name="keywords" class="form-control" value="<?php echo htmlspecialchars($edit_location['keywords'] ?? ''); ?>" placeholder="pathology lab Pune, blood test Pune">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Popular Services (one per line)</label>
+                                <textarea name="services_text" class="form-control" rows="5" placeholder="CBC & hematology&#10;Thyroid profile"><?php echo htmlspecialchars($edit_location['services_text'] ?? ''); ?></textarea>
+                            </div>
+                            <label style="display:flex; gap:8px; align-items:center; margin-bottom:16px;">
+                                <input type="checkbox" name="is_active" value="1" <?php echo (int) ($edit_location['is_active'] ?? 1) === 1 ? 'checked' : ''; ?> style="width:18px;height:18px;">
+                                Show on website
+                            </label>
+                            <button type="submit" name="update_location" class="btn btn-teal"><i class="fa-solid fa-floppy-disk"></i> Save Location</button>
+                            <a href="cms.php#tab-locations" class="btn btn-secondary">Cancel</a>
+                        </form>
+                    </div>
+                    <?php endif; ?>
+
+                    <div class="cms-form-box">
+                        <h3 style="font-size: 1.2rem; margin-bottom: 15px; color: var(--primary);">Add Service Location</h3>
+                        <form action="cms.php#tab-locations" method="POST">
+                            <?php echo csrfField(); ?>
+                            <div class="admin-form-row">
+                                <div class="form-group">
+                                    <label class="form-label">City / Area Name</label>
+                                    <input type="text" name="name" class="form-control" required placeholder="e.g. Pune">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">URL Slug (optional)</label>
+                                    <input type="text" name="slug" class="form-control" placeholder="Auto from name if empty, e.g. pune">
+                                </div>
+                            </div>
+                            <div class="admin-form-row">
+                                <div class="form-group">
+                                    <label class="form-label">State</label>
+                                    <input type="text" name="state" class="form-control" value="Maharashtra">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Display Sequence</label>
+                                    <input type="number" name="sequence" class="form-control" value="0">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">SEO Headline</label>
+                                <input type="text" name="headline" class="form-control" required placeholder="Pathology Lab & Home Collection in Pune">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Description</label>
+                                <textarea name="description" class="form-control" rows="3" required placeholder="Short description for the location landing page..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">SEO Keywords</label>
+                                <input type="text" name="keywords" class="form-control" placeholder="pathology lab Pune, blood test Pune">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Popular Services (one per line)</label>
+                                <textarea name="services_text" class="form-control" rows="5" placeholder="CBC & hematology&#10;Home sample collection"></textarea>
+                            </div>
+                            <label style="display:flex; gap:8px; align-items:center; margin-bottom:16px;">
+                                <input type="checkbox" name="is_active" value="1" checked style="width:18px;height:18px;">
+                                Show on website
+                            </label>
+                            <button type="submit" name="add_location" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Location</button>
+                        </form>
+                    </div>
+
+                    <div class="admin-panel-card" style="margin-top: 24px;">
+                        <div class="admin-card-header">
+                            <h2>Current Locations (<?php echo count($locations); ?>)</h2>
+                        </div>
+                        <?php if (empty($locations)): ?>
+                            <p style="color:#64748b; padding:12px 0;">No locations yet. Add your first city above, or reload the page to import defaults.</p>
+                        <?php endif; ?>
+                        <?php foreach ($locations as $loc): ?>
+                            <div class="cms-item-card">
+                                <div class="cms-item-details">
+                                    <h4><?php echo htmlspecialchars($loc['name']); ?>
+                                        <?php if ((int) ($loc['is_active'] ?? 1) !== 1): ?>
+                                            <span class="badge badge-pending" style="font-size:0.75rem; margin-left:8px;">Hidden</span>
+                                        <?php endif; ?>
+                                    </h4>
+                                    <p style="font-size:0.85rem; color:#64748b; margin:6px 0;">Slug: <code><?php echo htmlspecialchars($loc['slug']); ?></code> · Seq: <?php echo (int) $loc['sequence']; ?></p>
+                                    <p style="font-style:italic; margin-bottom:6px;"><?php echo htmlspecialchars($loc['headline']); ?></p>
+                                    <p style="font-size:0.9rem; color:#475569;"><?php echo htmlspecialchars(strlen($loc['description']) > 120 ? substr($loc['description'], 0, 120) . '…' : $loc['description']); ?></p>
+                                </div>
+                                <div class="cms-item-actions">
+                                    <a href="../location.php?city=<?php echo urlencode($loc['slug']); ?>" target="_blank" class="action-btn" style="margin-right:8px;"><i class="fa-solid fa-arrow-up-right-from-square"></i> View</a>
+                                    <a href="cms.php?edit_location=<?php echo (int) $loc['id']; ?>#tab-locations" class="action-btn" style="margin-right:8px;"><i class="fa-regular fa-pen-to-square"></i> Edit</a>
+                                    <a href="cms.php?delete_type=location&id=<?php echo (int) $loc['id']; ?>" onclick="return confirm('Delete this location?')" class="action-btn btn-action-delete">
                                         <i class="fa-regular fa-trash-can"></i> Delete
                                     </a>
                                 </div>

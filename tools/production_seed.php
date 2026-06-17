@@ -66,17 +66,53 @@ try {
         'floating_whatsapp_enabled' => '1',
         'footer_badge_1' => 'NABL ALIGNED',
         'footer_badge_2' => 'ESTD 2026',
-        'schema_street' => 'Unity Clinical Laboratory',
+        'schema_street' => 'Unity Clinical Laboratory, Diagnostic Center',
         'schema_city' => 'Maharashtra',
         'schema_state' => 'Maharashtra',
-        'schema_postal' => '',
-        'schema_lat' => '',
-        'schema_lng' => '',
-        'schema_alternate_name' => 'UCL',
-        'seo_default_keywords' => 'Unity Clinical Laboratory, pathology lab, blood test, CBC, thyroid, diabetes, LFT, KFT, lipid profile, home collection, Maharashtra, diagnostic center',
-        'seo_default_description' => 'Unity Clinical Laboratory offers 90+ pathology tests including CBC, thyroid, diabetes, liver, kidney and health packages. Home sample collection across Maharashtra. Call +91 98507 00268.',
-        'seo_home_description' => 'Book blood tests, health packages and home sample collection at Unity Clinical Laboratory, Maharashtra. Accurate reports with Sysmex & Orbit analyzers.',
-        'maps_embed_url' => '',
+        'schema_postal' => '411001',
+        'schema_lat' => '18.5204',
+        'schema_lng' => '73.8567',
+        'geo_region_code' => 'IN-MH',
+        'schema_alternate_name' => 'UCL | Unity Lab',
+        'seo_home_title' => 'Pathology Lab Maharashtra | Blood Test & Home Collection',
+        'seo_default_title_suffix' => 'Accurate Blood Tests, Health Packages & Home Collection',
+        'seo_default_keywords' => 'Unity Clinical Laboratory, pathology lab Maharashtra, blood test, CBC, thyroid test, diabetes test, LFT, KFT, lipid profile, home sample collection, health checkup packages, diagnostic center Pune Mumbai Nagpur',
+        'seo_default_description' => 'Unity Clinical Laboratory offers 90+ pathology tests including CBC, thyroid, diabetes, liver, kidney and health packages from ₹530. Home sample collection across Maharashtra. Call +91 98507 00268.',
+        'seo_home_description' => 'Book blood tests, health packages and home sample collection at Unity Clinical Laboratory, Maharashtra. Accurate reports with Sysmex XQ-320 & Orbit Smart-7 analyzers. Reports in 6–12 hours.',
+        'og_site_name' => 'Unity Clinical Laboratory',
+        'twitter_site' => '@unityclinicallab',
+        'social_facebook' => 'https://www.facebook.com/unityclinicallab',
+        'social_instagram' => 'https://www.instagram.com/unityclinicallab',
+        'social_youtube' => '',
+        'hero_whatsapp_message' => 'Hello Unity Clinical Laboratory, I would like to book a blood test / home sample collection. Please share available slots.',
+        'hero_btn_book_text' => 'Book Home Test',
+        'hero_btn_book_url' => 'collection.php',
+        'hero_btn_download_text' => 'Download Report',
+        'hero_btn_download_url' => 'download.php',
+        'hero_btn_call_text' => 'Call Now',
+        'top_offer_text' => 'Home Sample Collection from 6:00 AM | CBC from ₹200 | Packages from ₹530',
+        'top_offer_link' => 'packages.php',
+        'top_offer_link_text' => 'View Packages',
+        'footer_home_collection_note' => 'Home Sample Collection starts from 6:00 AM.',
+        'notify_on_review' => '1',
+        'notify_customer_on_booking' => '1',
+        'maps_embed_url' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d387193.7157577628!2d73.8567!3d18.5204!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc2bf2e67461101%3A0x828d43bf9d4af424!2sMaharashtra!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin',
+        'maps_directions_url' => '',
+        'favicon_path' => 'images/akshay_ucl_logo.jpg',
+        'apple_touch_icon' => 'images/akshay_ucl_logo.jpg',
+        'trust_strip_enabled' => '1',
+        'trust_strip_1_icon' => 'fa-solid fa-vials',
+        'trust_strip_1_text' => '90+ Pathology Tests',
+        'trust_strip_2_icon' => 'fa-solid fa-truck-medical',
+        'trust_strip_2_text' => 'Home Collection from 6 AM',
+        'trust_strip_3_icon' => 'fa-solid fa-bolt',
+        'trust_strip_3_text' => 'Reports in 6–12 Hours',
+        'trust_strip_4_icon' => 'fa-solid fa-microscope',
+        'trust_strip_4_text' => 'Sysmex & Orbit Analyzers',
+        'rate_card_enabled' => '1',
+        'rate_card_image' => 'images/gallery/web/rate-card.jpg',
+        'rate_card_cta_text' => 'View Rate Card',
+        'mobile_sticky_enabled' => '1',
         'hero_stat_1_value' => '90+',
         'hero_stat_1_label' => 'Pathology Tests',
         'hero_stat_2_value' => '2026',
@@ -150,9 +186,8 @@ try {
     // ── FAQs — remove Gurugram references ──
     $db->exec("UPDATE cms_faqs SET answer = REPLACE(answer, 'Gurugram and surrounding regions', 'Maharashtra and surrounding areas') WHERE answer LIKE '%Gurugram%'");
     $db->exec("UPDATE cms_faqs SET answer = REPLACE(answer, 'across Gurugram', 'across Maharashtra') WHERE answer LIKE '%Gurugram%'");
-
-    // ── Testimonials — update location ──
     $db->exec("UPDATE cms_testimonials SET designation = REPLACE(designation, 'Gurugram', 'Maharashtra') WHERE designation LIKE '%Gurugram%'");
+    $db->exec("UPDATE cms_testimonials SET text = REPLACE(text, 'NABL compliant', 'NABL aligned') WHERE text LIKE '%NABL compliant%'");
 
     // ── Blog images → real lab photos ──
     $blogImages = [
@@ -170,9 +205,26 @@ try {
 
     // ── Contact page ──
     $db->prepare("UPDATE cms_pages SET
-        meta_description = 'Contact Unity Clinical Laboratory, Maharashtra. Call +91 98507 00268 for appointments and home sample collection.',
+        meta_title = 'Contact Unity Clinical Laboratory Maharashtra | +91 98507 00268',
+        meta_description = 'Contact Unity Clinical Laboratory, Maharashtra. Call +91 98507 00268 for appointments, home sample collection and report queries.',
+        meta_keywords = 'contact pathology lab Maharashtra, Unity Clinical Laboratory phone, home collection booking',
         content_description = 'Call +91 98507 00268 or WhatsApp us for bookings, report queries, and home collection across Maharashtra.'
         WHERE slug = 'contact'")->execute();
+
+    $pageSeo = [
+        'services' => ['Pathology Tests Maharashtra | 90+ Blood Tests | Unity Clinical Laboratory', 'Browse 90+ pathology tests — CBC, thyroid, diabetes, LFT, KFT, lipid profile and more. Transparent rate-card pricing with home collection in Maharashtra.'],
+        'packages' => ['Health Checkup Packages from ₹530 | Unity Clinical Laboratory', 'Preventive health packages — Basic ₹530, Full Body ₹3739, Diabetes, Senior Citizen and Women\'s health screening in Maharashtra.'],
+        'about' => ['About Unity Clinical Laboratory | NABL Aligned Pathology Lab Maharashtra', 'Unity Clinical Laboratory — established 2026. Modern Sysmex, Orbit & Labomed equipment. Qualified DMLT staff. Your Health, Our Responsibility.'],
+        'collection' => ['Book Home Blood Test Collection Maharashtra | Unity Clinical Laboratory', 'Schedule home sample collection from 6:00 AM. Certified phlebotomists, cold-chain transport, reports in 6–12 hours.'],
+        'download' => ['Download Lab Report Online | Unity Clinical Laboratory Patient Portal', 'Securely download your pathology report PDF using Patient ID and registered mobile number with OTP verification.'],
+        'blog' => ['Health & Diagnostics Blog | Pathology Tips | Unity Clinical Laboratory', 'Expert articles on blood tests, diabetes monitoring, thyroid health, preventive screening and lab report interpretation.'],
+        'gallery' => ['Laboratory Gallery | Equipment & Facilities | Unity Clinical Laboratory', 'Tour our diagnostic laboratory — Sysmex hematology, Orbit biochemistry, sample processing and professional blood collection.'],
+        'locations' => ['Pathology Lab Service Areas Maharashtra | Home Collection Cities', 'Unity Clinical Laboratory serves Pune, Mumbai, Nagpur, Nashik, Aurangabad, Kolhapur and across Maharashtra.'],
+    ];
+    $pStmt = $db->prepare('UPDATE cms_pages SET meta_title = ?, meta_description = ? WHERE slug = ?');
+    foreach ($pageSeo as $slug => [$title, $desc]) {
+        $pStmt->execute([$title, $desc, $slug]);
+    }
 
     // ── About badges — only verified claims from signboard/logo ──
     $db->exec("UPDATE cms_page_blocks SET title = 'NABL Aligned', is_active = 1 WHERE page_slug = 'about' AND block_type = 'badge' AND sequence = 2");

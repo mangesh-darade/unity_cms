@@ -14,6 +14,13 @@ $whatsapp_num = cmsSetting($cms, 'whatsapp_number');
 
 $privacy_url = cmsPageFilename($cms_pages ?? [], 'privacy', 'privacy.php');
 $terms_url = cmsPageFilename($cms_pages ?? [], 'terms', 'terms.php');
+
+$sticky_enabled = ($cms['mobile_sticky_enabled'] ?? '1') === '1';
+$sticky_phone = cmsSetting($cms, 'support_phone');
+$sticky_phone_href = preg_replace('/[^0-9+]/', '', $sticky_phone);
+$sticky_whatsapp = preg_replace('/[^0-9]/', '', cmsSetting($cms, 'whatsapp_number'));
+$sticky_book_url = cmsSetting($cms, 'hero_btn_book_url', 'collection.php');
+$sticky_call_text = cmsSetting($cms, 'hero_btn_call_text', 'Call');
 ?>
     </main>
     <footer class="site-footer">
@@ -111,6 +118,27 @@ $terms_url = cmsPageFilename($cms_pages ?? [], 'terms', 'terms.php');
             </div>
         </div>
     </footer>
+
+    <?php if ($sticky_enabled && ($sticky_phone !== '' || $sticky_whatsapp !== '')): ?>
+    <nav class="mobile-sticky-bar" id="mobileStickyBar" aria-label="Quick contact actions">
+        <?php if ($sticky_phone !== ''): ?>
+        <a href="tel:<?php echo htmlspecialchars($sticky_phone_href); ?>" class="mobile-sticky-btn mobile-sticky-call">
+            <i class="fa-solid fa-phone" aria-hidden="true"></i>
+            <span><?php echo htmlspecialchars($sticky_call_text); ?></span>
+        </a>
+        <?php endif; ?>
+        <?php if ($sticky_whatsapp !== ''): ?>
+        <a href="https://wa.me/<?php echo htmlspecialchars($sticky_whatsapp); ?>?text=<?php echo urlencode(cmsSetting($cms, 'hero_whatsapp_message', 'Hi, I would like to book a diagnostic test.')); ?>" class="mobile-sticky-btn mobile-sticky-wa" target="_blank" rel="noopener noreferrer">
+            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+            <span>WhatsApp</span>
+        </a>
+        <?php endif; ?>
+        <a href="<?php echo htmlspecialchars($sticky_book_url); ?>" class="mobile-sticky-btn mobile-sticky-book">
+            <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
+            <span><?php echo htmlspecialchars(cmsSetting($cms, 'hero_btn_book_text', 'Book Test')); ?></span>
+        </a>
+    </nav>
+    <?php endif; ?>
 
     <script src="js/main.js"></script>
 </body>

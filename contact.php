@@ -18,6 +18,7 @@ $support_address = cmsSetting($cms, 'support_address');
 $whatsapp_num = preg_replace('/[^0-9]/', '', cmsSetting($cms, 'whatsapp_number'));
 $phone_href = preg_replace('/[^0-9+]/', '', $support_phone);
 $maps_url = cmsSetting($cms, 'maps_embed_url');
+$maps_directions = cmsSetting($cms, 'maps_directions_url');
 $home_collection_note = cmsSetting($cms, 'footer_home_collection_note', 'Home collection requests are serviced from 6:00 AM daily.');
 
 include 'includes/header.php';
@@ -137,6 +138,13 @@ include 'includes/header.php';
 
         <?php if ($maps_url !== ''): ?>
         <div class="map-container map-container-premium reveal">
+            <?php if ($maps_directions !== ''): ?>
+            <p style="margin-bottom:12px;text-align:center;">
+                <a href="<?php echo htmlspecialchars($maps_directions); ?>" class="btn btn-secondary" target="_blank" rel="noopener noreferrer">
+                    <i class="fa-solid fa-diamond-turn-right"></i> Get Directions to Our Lab
+                </a>
+            </p>
+            <?php endif; ?>
             <iframe src="<?php echo htmlspecialchars($maps_url); ?>" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Laboratory location map"></iframe>
         </div>
         <?php endif; ?>

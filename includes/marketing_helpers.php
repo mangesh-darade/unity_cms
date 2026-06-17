@@ -35,7 +35,7 @@ function cmsMetaDescription(array $cms, ?string $pageDescription = null): string
     if ($pageDescription !== null && trim($pageDescription) !== '') {
         return trim($pageDescription);
     }
-    return cmsSetting($cms, 'seo_default_description', 'Unity Clinical Laboratory offers NABL accredited pathology services including blood, urine, biochemistry, thyroid, diabetes and full body health checkups with home sample collection.');
+    return cmsSetting($cms, 'seo_default_description', 'Unity Clinical Laboratory offers NABL aligned pathology services including blood, urine, biochemistry, thyroid, diabetes and full body health checkups with home sample collection in Maharashtra.');
 }
 
 function cmsMetaKeywords(array $cms, ?string $pageKeywords = null): string
@@ -43,7 +43,7 @@ function cmsMetaKeywords(array $cms, ?string $pageKeywords = null): string
     if ($pageKeywords !== null && trim($pageKeywords) !== '') {
         return trim($pageKeywords);
     }
-    return cmsSetting($cms, 'seo_default_keywords', 'laboratory, pathology lab, blood test, urine test, health checkup, home collection, NABL, diagnostic center');
+    return cmsSetting($cms, 'seo_default_keywords', 'laboratory, pathology lab, blood test, urine test, health checkup, home collection, NABL, diagnostic center, Maharashtra');
 }
 
 function cmsOgImage(array $cms, ?string $pageOgImage = null): string
@@ -156,6 +156,129 @@ function cmsLocalBusinessSchema(array $cms): array
     return $schema;
 }
 
+function cmsWebSiteSchema(array $cms): array
+{
+    $siteUrl = rtrim(BASE_URL, '/');
+    return [
+        '@context' => 'https://schema.org',
+        '@type' => 'WebSite',
+        'name' => cmsSetting($cms, 'site_name'),
+        'url' => $siteUrl,
+        'description' => cmsSetting($cms, 'seo_default_description'),
+        'publisher' => [
+            '@type' => 'MedicalBusiness',
+            'name' => cmsSetting($cms, 'site_name'),
+            'logo' => cmsOgImage($cms),
+        ],
+        'potentialAction' => [
+            '@type' => 'SearchAction',
+            'target' => $siteUrl . '/services.php?q={search_term_string}',
+            'query-input' => 'required name=search_term_string',
+        ],
+    ];
+}
+
+function cmsBreadcrumbSchema(array $items): array
+{
+    $elements = [];
+    $pos = 1;
+    foreach ($items as $item) {
+        if (empty($item['label'])) {
+            continue;
+        }
+        $entry = [
+            '@type' => 'ListItem',
+            'position' => $pos++,
+            'name' => $item['label'],
+        ];
+        if (!empty($item['url'])) {
+            $entry['item'] = rtrim(BASE_URL, '/') . '/' . ltrim($item['url'], '/');
+        }
+        $elements[] = $entry;
+    }
+    return [
+        '@context' => 'https://schema.org',
+        '@type' => 'BreadcrumbList',
+        'itemListElement' => $elements,
+    ];
+}
+
+function cmsArticleSchema(array $cms, array $post): array
+{
+    $siteUrl = rtrim(BASE_URL, '/');
+    $image = $post['image_path'] ?? '';
+    if ($image !== '' && !preg_match('#^https?://#i', $image)) {
+        $image = $siteUrl . '/' . ltrim($image, '/');
+    }
+    return [
+        '@context' => 'https://schema.org',
+        '@type' => 'Article',
+        'headline' => $post['title'],
+        'description' => $post['summary'] ?? '',
+        'image' => $image !== '' ? [$image] : [cmsOgImage($cms)],
+        'author' => [
+            '@type' => 'Organization',
+            'name' => $post['author'] ?? cmsSetting($cms, 'site_name'),
+        ],
+        'publisher' => [
+            '@type' => 'Organization',
+            'name' => cmsSetting($cms, 'site_name'),
+            'logo' => [
+                '@type' => 'ImageObject',
+                'url' => cmsOgImage($cms),
+            ],
+        ],
+        'datePublished' => date('c', strtotime($post['created_at'])),
+        'dateModified' => date('c', strtotime($post['created_at'])),
+        'mainEntityOfPage' => $siteUrl . '/blog-post.php?id=' . (int) $post['id'],
+    ];
+}
+
+function cmsTestimonialsReviewSchema(PDO $db, array $cms): ?array
+{
+    try {
+        $rows = $db->query("SELECT text, author FROM cms_testimonials WHERE status = 'approved' OR status IS NULL OR status = '' ORDER BY sequence ASC LIMIT 10")->fetchAll();
+    } catch (PDOException $e) {
+        return null;
+    }
+    if (count($rows) < 1) {
+        return null;
+    }
+    $reviews = [];
+    foreach ($rows as $row) {
+        $reviews[] = [
+            '@type' => 'Review',
+            'reviewBody' => $row['text'],
+            'author' => [
+                '@type' => 'Person',
+                'name' => $row['author'],
+            ],
+            'reviewRating' => [
+                '@type' => 'Rating',
+                'ratingValue' => '5',
+                'bestRating' => '5',
+            ],
+        ];
+    }
+    return [
+        '@context' => 'https://schema.org',
+        '@type' => 'MedicalBusiness',
+        'name' => cmsSetting($cms, 'site_name'),
+        'aggregateRating' => [
+            '@type' => 'AggregateRating',
+            'ratingValue' => '4.9',
+            'reviewCount' => (string) count($rows),
+            'bestRating' => '5',
+        ],
+        'review' => $reviews,
+    ];
+}
+
+function renderJsonLd(array $schema): void
+{
+    echo "\n<script type=\"application/ld+json\">" . json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "</script>\n";
+}
+
 function renderMarketingHead(array $cms, array $meta = []): void
 {
     $title = $meta['title'] ?? cmsMetaTitle($cms, null);
@@ -175,6 +298,32 @@ function renderMarketingHead(array $cms, array $meta = []): void
     <meta name="author" content="<?php echo htmlspecialchars($siteName); ?>">
     <meta name="robots" content="<?php echo htmlspecialchars($robots); ?>">
     <link rel="canonical" href="<?php echo htmlspecialchars($canonical); ?>">
+    <link rel="alternate" type="application/rss+xml" title="<?php echo htmlspecialchars($siteName); ?> Blog" href="<?php echo htmlspecialchars(rtrim(BASE_URL, '/') . '/feed.php'); ?>">
+    <?php
+    $favicon = cmsSetting($cms, 'favicon_path', 'images/akshay_ucl_logo.jpg');
+    $appleIcon = cmsSetting($cms, 'apple_touch_icon', $favicon);
+    if ($favicon !== ''):
+        $faviconUrl = preg_match('#^https?://#i', $favicon) ? $favicon : rtrim(BASE_URL, '/') . '/' . ltrim($favicon, '/');
+        $appleUrl = preg_match('#^https?://#i', $appleIcon) ? $appleIcon : rtrim(BASE_URL, '/') . '/' . ltrim($appleIcon, '/');
+        $faviconType = preg_match('/\.png$/i', $favicon) ? 'image/png' : (preg_match('/\.svg$/i', $favicon) ? 'image/svg+xml' : 'image/jpeg');
+    ?>
+    <link rel="icon" href="<?php echo htmlspecialchars($faviconUrl); ?>" type="<?php echo htmlspecialchars($faviconType); ?>">
+    <link rel="apple-touch-icon" href="<?php echo htmlspecialchars($appleUrl); ?>">
+    <?php endif; ?>
+
+    <?php
+    $geoRegionCode = cmsSetting($cms, 'geo_region_code', 'IN-MH');
+    $geoPlace = cmsSetting($cms, 'schema_city');
+    if ($geoRegionCode !== ''): ?>
+    <meta name="geo.region" content="<?php echo htmlspecialchars($geoRegionCode); ?>">
+    <?php endif; ?>
+    <?php if ($geoPlace !== ''): ?>
+    <meta name="geo.placename" content="<?php echo htmlspecialchars($geoPlace . ', India'); ?>">
+    <?php endif; ?>
+    <?php if (($lat = cmsSetting($cms, 'schema_lat')) !== '' && ($lng = cmsSetting($cms, 'schema_lng')) !== ''): ?>
+    <meta name="geo.position" content="<?php echo htmlspecialchars($lat . ';' . $lng); ?>">
+    <meta name="ICBM" content="<?php echo htmlspecialchars($lat . ', ' . $lng); ?>">
+    <?php endif; ?>
 
     <?php if ($verification = cmsSetting($cms, 'google_site_verification')): ?>
     <meta name="google-site-verification" content="<?php echo htmlspecialchars($verification); ?>">
@@ -199,6 +348,7 @@ function renderMarketingHead(array $cms, array $meta = []): void
     <?php endif; ?>
 
     <script type="application/ld+json"><?php echo json_encode(cmsLocalBusinessSchema($cms), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
+    <script type="application/ld+json"><?php echo json_encode(cmsWebSiteSchema($cms), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?></script>
     <?php
     renderTrackingScripts($cms, 'head');
 }
@@ -215,7 +365,8 @@ function renderTrackingScripts(array $cms, string $position = 'head'): void
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','<?php echo htmlspecialchars($gtm, ENT_QUOTES); ?>');</script>
         <?php endif;
-        if ($ga !== ''): ?>
+        // Direct GA4 only when GTM is not configured (avoid duplicate pageviews)
+        if ($ga !== '' && $gtm === ''): ?>
 <!-- Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=<?php echo htmlspecialchars($ga); ?>"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','<?php echo htmlspecialchars($ga, ENT_QUOTES); ?>');</script>

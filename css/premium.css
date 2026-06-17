@@ -1761,6 +1761,11 @@ html[data-theme="dark"] .faq-item {
     margin: 0;
 }
 
+.page-inner .team-card.team-card-photo {
+    padding: 0;
+    text-align: left;
+}
+
 .page-inner .team-card {
     flex-direction: column;
     text-align: center;
@@ -2940,5 +2945,364 @@ html[data-theme="dark"] .nav-item.active a:not(.nav-cta) {
 
 .services-section .grid-3 {
     gap: 28px;
+}
+
+/* ─── Trust strip (homepage) ─── */
+.trust-strip-section {
+    background: linear-gradient(90deg, #0f172a 0%, #134e4a 50%, #0f172a 100%);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 18px 0;
+}
+
+.trust-strip-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.trust-strip-list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 22px;
+    margin: 0;
+    padding: 0;
+    flex: 1;
+    min-width: 240px;
+}
+
+.trust-strip-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #e2e8f0;
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.trust-strip-item i {
+    color: #5eead4;
+    font-size: 0.95rem;
+}
+
+.trust-strip-rate-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.trust-rate-card-btn {
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+}
+
+.trust-rate-card-note {
+    font-size: 0.72rem;
+    color: #94a3b8;
+}
+
+/* ─── Mobile sticky contact bar ─── */
+.mobile-sticky-bar {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .mobile-sticky-bar {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 999;
+        background: #fff;
+        border-top: 1px solid #e2e8f0;
+        box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.12);
+        padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+        gap: 6px;
+    }
+
+    body:has(.mobile-sticky-bar) {
+        padding-bottom: 76px;
+    }
+
+    body.menu-open .mobile-sticky-bar {
+        display: none;
+    }
+
+    body:has(.mobile-sticky-bar) .floating-whatsapp {
+        bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .mobile-sticky-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px 4px;
+        border-radius: 10px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-align: center;
+        color: #334155;
+        min-height: 52px;
+    }
+
+    .mobile-sticky-btn i {
+        font-size: 1.15rem;
+    }
+
+    .mobile-sticky-call {
+        background: #f1f5f9;
+        color: #0f172a;
+    }
+
+    .mobile-sticky-wa {
+        background: #ecfdf5;
+        color: #047857;
+    }
+
+    .mobile-sticky-book {
+        background: linear-gradient(135deg, #0d9488, #14b8a6);
+        color: #fff;
+    }
+
+    .trust-strip-inner {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .trust-strip-rate-card {
+        align-items: center;
+        margin-top: 8px;
+    }
+
+    .trust-strip-list {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .trust-strip-item {
+        font-size: 0.8rem;
+    }
+}
+
+/* ─── Team photos & owner spotlight ─── */
+.owner-spotlight-grid {
+    gap: 48px;
+}
+
+.owner-photo-col {
+    position: relative;
+}
+
+.team-photo-polish {
+    filter: contrast(1.04) saturate(1.06);
+}
+
+.team-photo-grid--doctors {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 920px;
+    margin-left: auto;
+    margin-right: auto;
+    gap: 32px;
+}
+
+.team-photo-frame,
+.owner-photo-frame {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: linear-gradient(180deg, #f8fafc 0%, #e8eef4 100%);
+    box-shadow: var(--shadow-card-hover);
+    line-height: 0;
+}
+
+.team-card-photo .team-photo-frame {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    max-height: 480px;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 0;
+    box-shadow: none;
+    background: #f1f5f9;
+    line-height: 0;
+}
+
+.team-photo {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+    object-position: center top;
+}
+
+.owner-photo-frame {
+    border: 4px solid rgba(13, 148, 136, 0.25);
+}
+
+.owner-photo-frame .about-intro-img,
+.owner-photo-frame .owner-photo-img {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    object-fit: contain;
+    object-position: center center;
+    display: block;
+}
+
+.owner-photo-img {
+    filter: none;
+}
+
+.owner-role {
+    color: var(--brand-teal);
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin: 8px 0 4px;
+}
+
+.owner-photo-caption {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-top: 12px;
+}
+
+.team-card-photo {
+    padding: 0;
+    overflow: hidden;
+    text-align: left;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border);
+}
+
+.team-card-photo .team-photo-frame {
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.team-card-body {
+    padding: 24px;
+}
+
+.team-card-photo h3 {
+    font-size: 1.2rem;
+    margin-bottom: 6px;
+}
+
+.team-role {
+    color: var(--brand-teal);
+    font-weight: 700;
+    font-size: 0.88rem;
+    margin-bottom: 10px;
+}
+
+.team-bio {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.65;
+    margin: 0;
+}
+
+.team-photo-grid .team-card-photo {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.team-photo-grid .team-card-body {
+    flex: 1;
+}
+
+/* ─── Equipment detailed cards ─── */
+.equipment-grid-detailed {
+    align-items: stretch;
+}
+
+.equipment-card-detailed {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    background: #fff;
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border);
+    transition: transform 0.3s var(--ease-out-expo), box-shadow 0.3s;
+}
+
+.equipment-card-detailed:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-card-hover);
+}
+
+.equipment-img-wrap {
+    overflow: hidden;
+    background: #f1f5f9;
+    aspect-ratio: 3 / 2;
+}
+
+.equipment-card-detailed .equipment-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.equipment-card-detailed .equipment-body {
+    padding: 22px 24px 26px;
+    flex: 1;
+}
+
+.equipment-card-detailed h3 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    line-height: 1.35;
+}
+
+.equipment-intro {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+
+.equipment-spec-list {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-main);
+    font-size: 0.86rem;
+    line-height: 1.55;
+}
+
+.equipment-spec-list li {
+    margin-bottom: 6px;
+}
+
+.equipment-spec-list li::marker {
+    color: var(--brand-teal);
+}
+
+@media (max-width: 768px) {
+    .team-photo-grid--doctors {
+        grid-template-columns: 1fr;
+        max-width: 420px;
+    }
+
+    .owner-photo-frame .about-intro-img,
+    .owner-photo-frame .owner-photo-img {
+        max-height: none;
+    }
 }
 

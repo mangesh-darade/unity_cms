@@ -7,8 +7,6 @@ if (basename($_SERVER['PHP_SELF']) == 'db.php') {
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/db_helpers.php';
-
-// Set timezone
 date_default_timezone_set('Asia/Kolkata');
 
 $is_new_db = false;
@@ -126,7 +124,12 @@ try {
         text TEXT NOT NULL,
         author TEXT NOT NULL,
         designation TEXT,
-        sequence INTEGER DEFAULT 0
+        sequence INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'approved',
+        email TEXT,
+        mobile TEXT,
+        source TEXT DEFAULT 'admin',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )");
 
     $db->exec("CREATE TABLE IF NOT EXISTS cms_faqs (
@@ -134,6 +137,19 @@ try {
         question TEXT NOT NULL,
         answer TEXT NOT NULL,
         sequence INTEGER DEFAULT 0
+    )");
+
+    $db->exec("CREATE TABLE IF NOT EXISTS cms_locations (
+        {$SQL_ID},
+        slug TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        state TEXT DEFAULT 'Maharashtra',
+        headline TEXT NOT NULL,
+        description TEXT NOT NULL,
+        keywords TEXT,
+        services_text TEXT,
+        sequence INTEGER DEFAULT 0,
+        is_active INTEGER DEFAULT 1
     )");
 
     $db->exec("CREATE TABLE IF NOT EXISTS cms_blogs (
@@ -208,8 +224,17 @@ try {
     ensureColumn($db, 'cms_pages', 'sitemap_changefreq', "TEXT DEFAULT 'monthly'");
     ensureColumn($db, 'cms_pages', 'sitemap_priority', "TEXT DEFAULT '0.5'");
     ensureColumn($db, 'cms_pages', 'include_in_sitemap', dbDriver($db) === 'mysql' ? 'TINYINT DEFAULT 1' : 'INTEGER DEFAULT 1');
+    ensureColumn($db, 'cms_testimonials', 'status', "TEXT DEFAULT 'approved'");
+    ensureColumn($db, 'cms_testimonials', 'email', 'TEXT');
+    ensureColumn($db, 'cms_testimonials', 'mobile', 'TEXT');
+    ensureColumn($db, 'cms_testimonials', 'source', "TEXT DEFAULT 'admin'");
+    ensureColumn($db, 'cms_testimonials', 'created_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
+    $db->exec("UPDATE cms_testimonials SET status = 'approved' WHERE status IS NULL OR status = ''");
+    $db->exec("UPDATE cms_testimonials SET source = 'admin' WHERE source IS NULL OR source = ''");
 
     cmsSeedPagesAndBlocks($db, $SQL_ID);
+    cmsEnsureLocationsPage($db);
+    cmsSeedLocationsIfEmpty($db);
     $section_meta_updates = [
         'hero' => ['', '', ''],
         'why_choose_us' => ['Our Strengths', 'Why Patients & Doctors Trust Unity Lab', 'We offer state-of-the-art diagnostics with a focus on precision, convenience, and affordability.'],
@@ -253,15 +278,16 @@ try {
         $settings_seeds = [
             'site_name' => 'Unity Clinical Laboratory',
             'logo_text' => 'UnityLab',
-            'support_phone' => '+91 98765 43210',
+            'support_phone' => '+91 98507 00268',
             'support_email' => 'info@unityclinicallab.com',
-            'support_address' => '102 Health Plaza, Sector 15, Gurugram, Haryana - 122001',
-            'whatsapp_number' => '919876543210',
-            'hero_tagline' => 'NABL Certified Laboratory & Diagnostic Center',
+            'support_address' => "Unity Clinical Laboratory\nMaharashtra, India\nPhone: +91 98507 00268",
+            'whatsapp_number' => '919850700268',
+            'hero_tagline' => 'NABL Aligned Laboratory & Diagnostic Center',
             'hero_headline' => 'Accurate Diagnostics. Trusted Results.',
             'hero_subheadline' => 'Advanced Blood, Urine and Health Diagnostic Testing with Fast & Reliable Reports.',
             'hero_bg_image' => 'images/hero-lab.jpg',
-            'maps_embed_url' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m18!1m2!1s0x390d19d6d5555555%3A0x8e82efc6ff6222b6!2sSector%2015%2C%20Gurugram%2C%20Haryana!5e0!3m2!1sen!2sin!4v1680000000000!5m2!1sen!2sin'
+            'maps_embed_url' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d387193.7157577628!2d73.8567!3d18.5204!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bc2bf2e67461101%3A0x828d43bf9d4af424!2sMaharashtra!5e0!3m2!1sen!2sin!4v1700000000000!5m2!1sen!2sin',
+            'maps_directions_url' => '',
         ];
         $stmt = $db->prepare("INSERT INTO cms_settings (key, value) VALUES (:key, :value)");
         foreach ($settings_seeds as $k => $v) {
@@ -342,9 +368,9 @@ try {
 
         // Seed Testimonials
         $test_seeds = [
-            ['Extremely satisfied with their home sample collection. The phlebotomist was professional, punctual, and drew blood painlessly. I got my lipid and thyroid reports online within 8 hours. High recommended!', 'Rajesh Kumar', 'Patient, Gurugram', 1],
+            ['Extremely satisfied with their home sample collection. The phlebotomist was professional, punctual, and drew blood painlessly. I got my lipid and thyroid reports online within 8 hours. Highly recommended!', 'Rajesh Kumar', 'Patient, Maharashtra', 1],
             ['I book the Senior Citizen Package for my parents every 6 months. It covers all major health parameters and is very affordable. The download report section is simple to use even for older people.', 'Priya Sharma', 'Corporate client', 2],
-            ['As a practicing doctor, I need reports I can trust. Unity Clinical Laboratory provides consistent accuracy, NABL compliant validation, and fast turnaround. They are my go-to choice for diagnostic referrals.', 'Dr. Amit Verma', 'MD, General Physician', 3]
+            ['As a practicing doctor, I need reports I can trust. Unity Clinical Laboratory provides consistent accuracy, NABL aligned validation, and fast turnaround. They are my go-to choice for diagnostic referrals.', 'Dr. Amit Verma', 'MD, General Physician', 3]
         ];
         $stmt = $db->prepare("INSERT INTO cms_testimonials (text, author, designation, sequence) VALUES (?, ?, ?, ?)");
         foreach ($test_seeds as $t) {
@@ -355,7 +381,7 @@ try {
         $faq_seeds = [
             ['How do I book a home sample collection test?', 'You can book easily by filling out the Home Sample Collection booking form on our homepage or clicking the \'Book Home Test\' button in the navigation. Select your preferred date, packages or tests, and provide your home address. Alternatively, you can directly message us on WhatsApp or call us.', 1],
             ['How do I download my diagnostic laboratory reports?', 'Go to the \'Download Report\' page or fill in the \'Download Lab Report Online\' card on our homepage. Enter your unique Patient ID (printed on the billing receipt, e.g. PAT-1001) and your registered 10-digit mobile number. Click \'Download Report PDF\' to instantly save it to your device.', 2],
-            ['Is Home Sample Collection available in my area?', 'Yes, we offer home sample collection services across Gurugram and surrounding regions. Our collectors visit homes and offices starting from 6:00 AM, allowing you to easily provide fasting-required samples before breakfast.', 3],
+            ['Is Home Sample Collection available in my area?', 'Yes, we offer home sample collection services across Maharashtra and surrounding areas. Our collectors visit homes and offices starting from 6:00 AM, allowing you to easily provide fasting-required samples before breakfast.', 3],
             ['What is the average turnaround time for standard test reports?', 'Most routine blood and urine analyses (such as CBC, Thyroid panel, Sugar tests, Lipid screen) are authorized and available for download within 6 to 12 hours of sample collection. Specialized biochemical cultures or immunological profiles may take 24 to 48 hours depending on incubation cycles.', 4]
         ];
         $stmt = $db->prepare("INSERT INTO cms_faqs (question, answer, sequence) VALUES (?, ?, ?)");
@@ -395,6 +421,8 @@ try {
         'mail_from_name' => 'Unity Clinical Laboratory',
         'notify_on_booking' => '1',
         'notify_on_inquiry' => '1',
+        'notify_on_review' => '1',
+        'notify_customer_on_booking' => '1',
         'notify_on_report' => '1',
         'report_otp_enabled' => '1',
         'captcha_enabled' => '1',
@@ -402,11 +430,11 @@ try {
         'msg91_api_key' => '',
         'msg91_sender_id' => 'UNITY',
         'seo_default_title_suffix' => 'Accurate Diagnostics & Blood Test Center',
-        'seo_default_description' => 'Unity Clinical Laboratory offers NABL accredited pathology services including blood, urine, biochemistry, thyroid, diabetes and full body health checkups with home sample collection.',
-        'seo_default_keywords' => 'laboratory, pathology lab, blood test, urine test, health checkup, home collection, NABL, diagnostic center, Gurugram',
+        'seo_default_description' => 'Unity Clinical Laboratory offers NABL aligned pathology services including blood, urine, biochemistry, thyroid, diabetes and full body health checkups with home sample collection in Maharashtra.',
+        'seo_default_keywords' => 'laboratory, pathology lab, blood test, urine test, health checkup, home collection, NABL, diagnostic center, Maharashtra, Unity Clinical Laboratory',
         'seo_title_format' => '{page}',
         'seo_home_title' => 'Accurate Diagnostics. Trusted Results.',
-        'seo_home_description' => 'Unity Clinical Laboratory is a premium pathology and diagnostic center offering NABL certified blood tests, urine tests, biochemistry, and health packages.',
+        'seo_home_description' => 'Unity Clinical Laboratory is a pathology and diagnostic center offering NABL aligned blood tests, urine tests, biochemistry, and health packages with home collection in Maharashtra.',
         'seo_robots_index' => '1',
         'og_image' => 'images/og-image.jpg',
         'og_site_name' => 'Unity Clinical Laboratory',
@@ -414,17 +442,20 @@ try {
         'twitter_site' => '',
         'google_analytics_id' => '',
         'google_tag_manager_id' => '',
+        'ga4_property_id' => '',
+        'ga4_looker_embed_url' => '',
         'facebook_pixel_id' => '',
         'google_site_verification' => '',
         'bing_site_verification' => '',
         'schema_alternate_name' => 'Unity Diagnostics',
-        'schema_street' => '102 Health Plaza, Sector 15',
-        'schema_city' => 'Gurugram',
-        'schema_state' => 'Haryana',
-        'schema_postal' => '122001',
+        'schema_street' => 'Unity Clinical Laboratory, Diagnostic Center',
+        'schema_city' => 'Maharashtra',
+        'schema_state' => 'Maharashtra',
+        'schema_postal' => '411001',
         'schema_country' => 'IN',
-        'schema_lat' => '28.459497',
-        'schema_lng' => '77.026638',
+        'geo_region_code' => 'IN-MH',
+        'schema_lat' => '18.5204',
+        'schema_lng' => '73.8567',
         'schema_price_range' => '$$',
         'schema_opens_weekday' => '07:00',
         'schema_closes_weekday' => '21:00',
@@ -437,9 +468,9 @@ try {
         'social_linkedin' => '',
         'top_offer_link' => 'packages.php',
         'top_offer_link_text' => 'View Offers',
-        'top_bar_location' => 'Gurugram, India',
-        'footer_badge_1' => 'NABL ACCREDITED',
-        'footer_badge_2' => 'ISO 9001:2015',
+        'top_bar_location' => 'Maharashtra, India',
+        'footer_badge_1' => 'NABL ALIGNED',
+        'footer_badge_2' => 'ESTD 2026',
         'footer_home_collection_note' => 'Home Sample Collection starts from 6:00 AM.',
         'hero_btn_book_text' => 'Book Home Test',
         'hero_btn_book_url' => 'collection.php',
@@ -493,6 +524,22 @@ try {
         'hero_trust_3_icon' => 'fa-solid fa-bolt',
         'hero_trust_4_text' => 'Home Collection',
         'hero_trust_4_icon' => 'fa-solid fa-house-medical',
+        'favicon_path' => 'images/akshay_ucl_logo.jpg',
+        'apple_touch_icon' => 'images/akshay_ucl_logo.jpg',
+        'maps_directions_url' => '',
+        'trust_strip_enabled' => '1',
+        'trust_strip_1_icon' => 'fa-solid fa-vials',
+        'trust_strip_1_text' => '90+ Pathology Tests',
+        'trust_strip_2_icon' => 'fa-solid fa-truck-medical',
+        'trust_strip_2_text' => 'Home Collection from 6 AM',
+        'trust_strip_3_icon' => 'fa-solid fa-bolt',
+        'trust_strip_3_text' => 'Reports in 6–12 Hours',
+        'trust_strip_4_icon' => 'fa-solid fa-microscope',
+        'trust_strip_4_text' => 'Sysmex & Orbit Analyzers',
+        'rate_card_enabled' => '1',
+        'rate_card_image' => 'images/gallery/web/rate-card.jpg',
+        'rate_card_cta_text' => 'View Rate Card',
+        'mobile_sticky_enabled' => '1',
     ];
     $check_stmt = $db->prepare(
         dbDriver($db) === 'mysql'
@@ -545,6 +592,19 @@ try {
     require_once __DIR__ . '/cms_helpers.php';
     require_once __DIR__ . '/marketing_helpers.php';
 
+    cmsMigrateSiteCopy($db);
+    cmsEnsureTrustStripSection($db);
+    cmsEnsureTeamEquipmentContent($db);
+
+    $cms = [];
+    foreach ($db->query('SELECT * FROM cms_settings')->fetchAll() as $row) {
+        $cms[$row['key']] = $row['value'];
+    }
+    $cms_sections = [];
+    foreach ($db->query('SELECT * FROM cms_sections')->fetchAll() as $row) {
+        $cms_sections[$row['section_code']] = $row;
+    }
+
 } catch (PDOException $e) {
     die("Database Connection failed: " . $e->getMessage());
 }
@@ -564,6 +624,98 @@ function generatePatientID($db) {
     return 'PAT-' . $next_number;
 }
 
+/**
+ * One-time-safe migration: fix Gurugram / overstated NABL wording in existing databases.
+ */
+function cmsMigrateSiteCopy(PDO $db): void
+{
+    $textReplacements = [
+        'Gurugram and surrounding regions' => 'Maharashtra and surrounding areas',
+        'across Gurugram' => 'across Maharashtra',
+        'Patient, Gurugram' => 'Patient, Maharashtra',
+        'Gurugram, India' => 'Maharashtra, India',
+        'Gurugram, Haryana' => 'Maharashtra, India',
+        '102 Health Plaza, Sector 15, Gurugram, Haryana - 122001' => "Unity Clinical Laboratory\nMaharashtra, India\nPhone: +91 98507 00268",
+        'NABL Certified Laboratory & Diagnostic Center' => 'NABL Aligned Laboratory & Diagnostic Center',
+        'NABL Certified' => 'NABL Aligned',
+        'NABL certified' => 'NABL aligned',
+        'NABL ACCREDITED' => 'NABL ALIGNED',
+        'NABL accredited' => 'NABL aligned',
+        'NABL compliant' => 'NABL aligned',
+        'NABL-standard' => 'NABL-aligned',
+        'ISO 9001:2015 and NABL aligned' => 'NABL aligned',
+    ];
+
+    foreach ($db->query('SELECT key, value FROM cms_settings')->fetchAll() as $row) {
+        $new = (string) $row['value'];
+        foreach ($textReplacements as $from => $to) {
+            $new = str_replace($from, $to, $new);
+        }
+        if (stripos($new, 'Gurugram') !== false && $row['key'] === 'support_address') {
+            $new = "Unity Clinical Laboratory\nMaharashtra, India\nPhone: +91 98507 00268";
+        }
+        if ($new !== $row['value']) {
+            dbReplaceSetting($db, $row['key'], $new);
+        }
+    }
+
+    foreach ($db->query('SELECT id, answer FROM cms_faqs')->fetchAll() as $faq) {
+        $new = (string) $faq['answer'];
+        foreach ($textReplacements as $from => $to) {
+            $new = str_replace($from, $to, $new);
+        }
+        if ($new !== $faq['answer']) {
+            $db->prepare('UPDATE cms_faqs SET answer = ? WHERE id = ?')->execute([$new, $faq['id']]);
+        }
+    }
+
+    foreach ($db->query('SELECT id, text, designation FROM cms_testimonials')->fetchAll() as $tst) {
+        $newText = (string) $tst['text'];
+        $newDesig = (string) $tst['designation'];
+        foreach ($textReplacements as $from => $to) {
+            $newText = str_replace($from, $to, $newText);
+            $newDesig = str_replace($from, $to, $newDesig);
+        }
+        if ($newText !== $tst['text'] || $newDesig !== $tst['designation']) {
+            $db->prepare('UPDATE cms_testimonials SET text = ?, designation = ? WHERE id = ?')
+                ->execute([$newText, $newDesig, $tst['id']]);
+        }
+    }
+
+    $db->exec("UPDATE cms_page_blocks SET is_active = 0 WHERE block_type = 'badge' AND title = 'ISO Certified'");
+    $db->exec("UPDATE cms_page_blocks SET title = 'NABL Aligned' WHERE block_type = 'badge' AND title LIKE '%NABL Certified%'");
+    $db->exec("UPDATE cms_page_blocks SET title = 'ESTD 2026', content = 'Established 2026 — modern equipment and accurate reporting.' WHERE page_slug = 'about' AND block_type = 'badge' AND title = 'ISO 9001:2015'");
+}
+
+function cmsEnsureTeamEquipmentContent(PDO $db): void
+{
+    $version = (int) ($db->query("SELECT value FROM cms_settings WHERE key = 'team_content_version'")->fetchColumn() ?: 0);
+    if ($version >= 2) {
+        return;
+    }
+
+    if (!is_file(dirname(__DIR__) . '/images/team/akshay-rakh-owner.png')) {
+        return;
+    }
+
+    require_once __DIR__ . '/cms_team_seed.php';
+    cmsApplyTeamEquipmentSeed($db);
+    dbReplaceSetting($db, 'team_content_version', '2');
+}
+
+function cmsEnsureTrustStripSection(PDO $db): void
+{
+    $exists = (int) $db->query("SELECT COUNT(*) FROM cms_sections WHERE section_code = 'trust_strip'")->fetchColumn();
+    if ($exists > 0) {
+        return;
+    }
+    $db->exec('UPDATE cms_sections SET sequence = sequence + 1 WHERE sequence >= 2');
+    $db->prepare(
+        "INSERT INTO cms_sections (section_code, section_title, sequence, is_active, section_type, section_tag, section_heading, section_description)
+         VALUES ('trust_strip', 'Trust Strip & Rate Card', 2, 1, 'builtin', 'Why Unity Lab', 'Trusted Pathology Services', 'Accurate reports, home collection, and transparent pricing.')"
+    )->execute();
+}
+
 function cmsSeedPagesAndBlocks(PDO $db, string $SQL_ID): void
 {
     $page_count = (int) $db->query('SELECT COUNT(*) FROM cms_pages')->fetchColumn();
@@ -573,7 +725,7 @@ function cmsSeedPagesAndBlocks(PDO $db, string $SQL_ID): void
     }
 
     $pages = [
-        ['about', 'about.php', 'about', 'About Our Laboratory', 'About Us', 'About Us | Accreditations & Quality Standards', 'Unity Clinical Laboratory is an ISO 9001:2015 and NABL aligned diagnostic pathology lab.', 'Our Background', 'Dedicated to Precision and Patient Care since 2012', 'Learn about our accreditations, values, and expert pathology team.'],
+        ['about', 'about.php', 'about', 'About Our Laboratory', 'About Us', 'About Us | Accreditations & Quality Standards', 'Unity Clinical Laboratory is a NABL aligned diagnostic pathology lab in Maharashtra.', 'Our Background', 'Dedicated to Precision and Patient Care', 'Learn about our values, equipment, and expert pathology team.'],
         ['services', 'services.php', 'services', 'Pathology Tests & Services', 'Tests & Services', 'Pathology Tests & Services | Accurate Blood & Urine Tests', 'Browse our NABL-standard diagnostic tests catalog including blood, urine, thyroid, and diabetes panels.', 'Diagnostics Catalog', 'Search Diagnostic Pathology Tests', 'Find pricing, patient pre-test guidelines, and sample requirements for our clinical lab tests.'],
         ['packages', 'packages.php', 'packages', 'Preventive Health Packages', 'Health Packages', 'Preventive Health Packages | Comprehensive Health Checkups', 'Choose from our preventive health packages with comprehensive blood screening starting from ₹499.', 'Wellness Packages', 'Select the Best Health Package for You', 'Regular clinical screenings are the foundation of healthy living.'],
         ['gallery', 'gallery.php', 'gallery', 'Laboratory Gallery', 'Laboratory Gallery', 'Laboratory Gallery | Diagnostic Facilities & Equipment', 'Take a virtual tour of Unity Clinical Laboratory facilities and equipment.', 'Facilities Showcase', 'Tour Our Advanced Clinical Laboratory', 'We maintain pristine sterility and premium technology across all diagnostic departments.'],
@@ -593,8 +745,8 @@ function cmsSeedPagesAndBlocks(PDO $db, string $SQL_ID): void
 
     $about_blocks = [
         ['intro', 'Our Background', 'Dedicated to Precision and Patient Care since 2012', "Unity Clinical Laboratory was founded with a single mission: to deliver accurate, reproducible, and fast diagnostic results. We understand that behind every blood vial is a patient awaiting critical answers.\n\nWe adhere strictly to NABL guidelines. Our facility uses automated barcoding systems, ensuring flawless sample tracking from draw to digital signature.", 'images/hero-lab.jpg', '', 1],
-        ['badge', 'NABL Aligned', '', 'Complies with ISO 15189 standards for diagnostic competence.', '', '', 2],
-        ['badge', 'ISO Certified', '', 'ISO 9001:2015 certified quality management systems.', '', '', 3],
+        ['badge', 'NABL Aligned', '', 'Aligned with NABL quality standards for diagnostic competence.', '', '', 2],
+        ['badge', 'ESTD 2026', '', 'Established 2026 — modern equipment and accurate reporting.', '', '', 3],
         ['header', 'Principles', 'Our Laboratory Core Values', 'Our daily clinical operations are built upon four fundamental cornerstones of modern healthcare.', '', '', 4],
         ['feature', 'Absolute Integrity', '', 'Uncompromised quality standards with strict internal control assays and zero tolerance for report errors.', '', 'fa-solid fa-clipboard-check', 5],
         ['feature', 'Patient First', '', 'Dedicated to safety, gentle sample collection technique, responsive counseling, and patient confidentiality.', '', 'fa-solid fa-user-doctor', 6],
@@ -672,6 +824,65 @@ function cmsSeedLegalPageBodies(PDO $db): void
             $template
         );
         $stmt->execute([':body' => $body, ':slug' => $slug]);
+    }
+}
+
+function cmsEnsureLocationsPage(PDO $db): void
+{
+    try {
+        $exists = (int) $db->query("SELECT COUNT(*) FROM cms_pages WHERE slug = 'locations'")->fetchColumn();
+        if ($exists > 0) {
+            return;
+        }
+        $maxSeq = (int) $db->query('SELECT COALESCE(MAX(sequence), 0) FROM cms_pages')->fetchColumn();
+        $stmt = $db->prepare('INSERT INTO cms_pages (slug, filename, nav_key, page_heading, breadcrumb_label, meta_title, meta_description, content_tag, content_title, content_description, sequence, include_in_sitemap) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)');
+        $stmt->execute([
+            'locations',
+            'locations.php',
+            'locations',
+            'Service Areas',
+            'Locations',
+            'Pathology Lab Service Areas Maharashtra | Home Collection',
+            'Unity Clinical Laboratory serves Pune, Mumbai, Nagpur, Nashik, Aurangabad, Kolhapur and across Maharashtra with blood tests and home sample collection.',
+            'Local SEO',
+            'Pathology & Home Collection Across Maharashtra',
+            'Book blood tests and health packages with home sample collection in major Maharashtra cities.',
+            $maxSeq + 1,
+        ]);
+
+        $menuExists = (int) $db->query("SELECT COUNT(*) FROM cms_menu WHERE url = 'locations.php'")->fetchColumn();
+        if ($menuExists === 0) {
+            $menuSeq = (int) $db->query('SELECT COALESCE(MAX(sequence), 0) FROM cms_menu')->fetchColumn();
+            $db->prepare('INSERT INTO cms_menu (title, url, sequence, is_active, is_cta) VALUES (?, ?, ?, 1, 0)')
+                ->execute(['Locations', 'locations.php', $menuSeq + 1]);
+        }
+    } catch (PDOException $e) {
+        // non-fatal on migration
+    }
+}
+
+function cmsSeedLocationsIfEmpty(PDO $db): void
+{
+    try {
+        if ((int) $db->query('SELECT COUNT(*) FROM cms_locations')->fetchColumn() > 0) {
+            return;
+        }
+    } catch (PDOException $e) {
+        return;
+    }
+
+    $defaults = [
+        ['pune', 'Pune', 'Pathology Lab & Home Blood Test Collection in Pune', 'Unity Clinical Laboratory offers accurate CBC, thyroid, diabetes, LFT, KFT and full body health packages with home sample collection across Pune and PCMC.', 'pathology lab Pune, blood test Pune, home collection Pune, diagnostic center Pune, health checkup Pune', "CBC & hematology\nThyroid & diabetes panels\nLiver & kidney function tests\nPreventive health packages\nHome phlebotomist visit", 1],
+        ['mumbai', 'Mumbai', 'Diagnostic Laboratory Services in Mumbai', 'Book pathology tests and preventive health packages in Mumbai with professional home sample collection and digital report download.', 'pathology lab Mumbai, blood test Mumbai, home collection Mumbai, diagnostic center Mumbai', "Routine blood tests\nLipid & cardiac markers\nWomen's health packages\nSenior citizen screening\nCorporate health checkups", 2],
+        ['nagpur', 'Nagpur', 'Blood Test & Pathology Services in Nagpur', 'Trusted pathology testing in Nagpur with Sysmex hematology, Orbit biochemistry analyzers and fast 6–12 hour reporting.', 'pathology lab Nagpur, blood test Nagpur, diagnostic center Nagpur, home collection Nagpur', "CBC & ESR\nBiochemistry panels\nSerology tests\nHealth packages from ₹530\nOnline report download", 3],
+        ['nashik', 'Nashik', 'Home Sample Collection & Lab Tests in Nashik', 'Affordable pathology services in Nashik — book home blood collection from 6:00 AM with transparent rate-card pricing.', 'pathology lab Nashik, blood test Nashik, home collection Nashik', "Fasting & PP blood sugar\nThyroid profile\nVitamin D & B12\nFull body checkup\nHome collection booking", 4],
+        ['aurangabad', 'Aurangabad', 'Clinical Laboratory & Health Checkups in Aurangabad', 'Unity Clinical Laboratory provides NABL-aligned pathology testing and preventive screening for families and doctors in Aurangabad.', 'pathology lab Aurangabad, blood test Aurangabad, diagnostic lab Aurangabad', "Diabetes monitoring (HbA1c)\nKidney & liver panels\nUrine routine\nHealth packages\nDoctor referral reports", 5],
+        ['kolhapur', 'Kolhapur', 'Pathology & Diagnostic Center — Kolhapur', 'Book accurate blood tests and health packages in Kolhapur with home sample collection and WhatsApp support.', 'pathology lab Kolhapur, blood test Kolhapur, home collection Kolhapur', "Complete blood count\nLipid profile\nThyroid tests\nPreventive packages\nDigital reports", 6],
+    ];
+
+    $stmt = $db->prepare('INSERT INTO cms_locations (slug, name, state, headline, description, keywords, services_text, sequence, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)');
+    foreach ($defaults as $row) {
+        $stmt->execute([$row[0], $row[1], 'Maharashtra', $row[2], $row[3], $row[4], $row[5], $row[6]]);
     }
 }
 ?>

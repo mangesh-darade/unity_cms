@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_notifications'])
                 $stmt->execute([':key' => $k, ':value' => trim($_POST[$k])]);
             }
         }
-        $flags = ['notify_on_booking', 'notify_on_inquiry', 'notify_on_report', 'report_otp_enabled', 'captcha_enabled'];
+        $flags = ['notify_on_booking', 'notify_on_inquiry', 'notify_on_review', 'notify_customer_on_booking', 'notify_on_report', 'report_otp_enabled', 'captcha_enabled'];
         foreach ($flags as $flag) {
             $stmt->execute([':key' => $flag, ':value' => isset($_POST[$flag]) ? '1' : '0']);
         }
@@ -76,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
         $msg = '<div class="alert alert-error">Please fill in all password fields.</div>';
     }
 }
+$admin_nav = 'settings';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -89,28 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
 </head>
 <body class="admin-body">
 
-    <!-- Admin Sidebar -->
-    <div class="admin-sidebar">
-        <div class="admin-sidebar-header">
-            <div class="logo-icon" style="width: 32px; height: 32px; font-size: 1.1rem;"><i class="fa-solid fa-flask"></i></div>
-            <span style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: #ffffff;">Unity Lab Admin</span>
-        </div>
-        
-        <ul class="admin-menu">
-            <li class="admin-menu-item"><a href="index.php"><i class="fa-solid fa-chart-line"></i> <span>Dashboard</span></a></li>
-            <li class="admin-menu-item"><a href="bookings.php"><i class="fa-solid fa-calendar-check"></i> <span>Bookings</span></a></li>
-            <li class="admin-menu-item"><a href="patients.php"><i class="fa-solid fa-users"></i> <span>Patients</span></a></li>
-            <li class="admin-menu-item"><a href="reports.php"><i class="fa-solid fa-file-pdf"></i> <span>Upload Reports</span></a></li>
-            <li class="admin-menu-item"><a href="inquiries.php"><i class="fa-solid fa-envelope-open-text"></i> <span>Inquiries</span></a></li>
-            <li class="admin-menu-item"><a href="cms.php"><i class="fa-solid fa-file-pen"></i> <span>CMS Settings</span></a></li>
-            <li class="admin-menu-item active"><a href="settings.php"><i class="fa-solid fa-sliders"></i> <span>Settings</span></a></li>
-        </ul>
-        
-        <div class="admin-sidebar-footer">
-            Logged in as:<br>
-            <strong style="color: #ffffff;"><?php echo htmlspecialchars($_SESSION['admin_username']); ?></strong>
-        </div>
-    </div>
+    <?php include __DIR__ . '/includes/sidebar.php'; ?>
 
     <!-- Main Content -->
     <div class="admin-main">
@@ -213,7 +193,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
                 </div>
                 <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin: 20px 0;">
                     <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" name="notify_on_booking" value="1" <?php echo ($cms['notify_on_booking'] ?? '1') === '1' ? 'checked' : ''; ?>> Email admin on new booking</label>
+                    <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" name="notify_customer_on_booking" value="1" <?php echo ($cms['notify_customer_on_booking'] ?? '1') === '1' ? 'checked' : ''; ?>> Email customer booking confirmation</label>
                     <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" name="notify_on_inquiry" value="1" <?php echo ($cms['notify_on_inquiry'] ?? '1') === '1' ? 'checked' : ''; ?>> Email admin on new inquiry</label>
+                    <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" name="notify_on_review" value="1" <?php echo ($cms['notify_on_review'] ?? '1') === '1' ? 'checked' : ''; ?>> Email admin on new patient review</label>
                     <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" name="notify_on_report" value="1" <?php echo ($cms['notify_on_report'] ?? '1') === '1' ? 'checked' : ''; ?>> Notify patient when report uploaded</label>
                     <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" name="report_otp_enabled" value="1" <?php echo ($cms['report_otp_enabled'] ?? '1') === '1' ? 'checked' : ''; ?>> Require OTP for report download</label>
                     <label style="display:flex; gap:8px; align-items:center;"><input type="checkbox" name="captcha_enabled" value="1" <?php echo ($cms['captcha_enabled'] ?? '1') === '1' ? 'checked' : ''; ?>> Captcha on public forms</label>

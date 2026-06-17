@@ -254,4 +254,31 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<?php include 'includes/footer.php'; ?>
+<?php
+$serviceListSchema = [
+    '@context' => 'https://schema.org',
+    '@type' => 'ItemList',
+    'name' => 'Pathology Tests & Diagnostic Services',
+    'numberOfItems' => $totalServices,
+    'itemListElement' => [],
+];
+$pos = 1;
+foreach (array_slice($services, 0, 24) as $svc) {
+    $serviceListSchema['itemListElement'][] = [
+        '@type' => 'ListItem',
+        'position' => $pos++,
+        'item' => [
+            '@type' => 'MedicalTest',
+            'name' => $svc['title'],
+            'description' => $svc['description'] ?? '',
+            'offers' => [
+                '@type' => 'Offer',
+                'price' => (string) $svc['price'],
+                'priceCurrency' => 'INR',
+            ],
+        ],
+    ];
+}
+renderJsonLd($serviceListSchema);
+
+include 'includes/footer.php'; ?>
